@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, BlockInfo, Uint128};
+use cosmwasm_std::{Addr, Binary, BlockInfo, Uint128};
 use cw20::Logo;
 use cw_utils::Expiration;
 use schemars::JsonSchema;
@@ -24,6 +24,7 @@ pub struct InstantiateMsg {
     pub mint: Option<MinterInfo>,
     pub marketing: Option<InstantiateMarketingInfo>,
     pub allowed_vesters: Option<Vec<String>>,
+    pub max_curve_complexity: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -197,6 +198,12 @@ pub enum ExecuteMsg {
     AllowVester { address: String },
     /// If set, it will remove an address to a permission list on TransferVesting
     DenyVester { address: String },
+    /// Allows minter to update staking address
+    UpdateStakingAddress { address: String },
+    /// Delegates excess of tokens
+    Delegate { amount: Uint128, msg: Binary },
+    /// Undelegates previously delegated tokens
+    Undelegate { recipient: String, amount: Uint128 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -208,12 +215,18 @@ pub enum QueryMsg {
     /// Returns the current vesting schedule for the given account.
     /// Return type: VestingResponse.
     Vesting { address: String },
+    /// Returns the amount of delegated tokens for the given account.
+    /// Return type: DelegatedResponse.
+    Delegated { address: String },
     /// Returns the allow list who can transfer vesting tokens.
     /// Return type: VestingAllowListResponse.
     VestingAllowList {},
     /// Returns metadata on the contract - name, decimals, supply, etc.
     /// Return type: TokenInfoResponse.
     TokenInfo {},
+    /// Returns maximum allowed complexity of vesting curves
+    /// Return type: MaxVestingComplexityResponse
+    MaxVestingComplexity {},
     /// Only with "mintable" extension.
     /// Returns who can mint and the hard cap on maximum tokens after minting.
     /// Return type: MinterResponse.
@@ -247,9 +260,18 @@ pub enum QueryMsg {
     /// contract.
     /// Return type: DownloadLogoResponse.
     DownloadLogo {},
+    /// Returns staking address used to delegate tokens.
+    /// Return type: StakingAddressResponse.
+    StakingAddress {},
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+pub struct MigrateMsg {
+    pub max_curve_complexity: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct MinterResponse {
     pub minter: String,
     /// cap is a hard cap on total supply that can be achieved by minting.
@@ -264,6 +286,7 @@ pub struct MinterResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct VestingResponse {
     /// The total vesting schedule
     pub schedule: Option<Curve>,
@@ -272,6 +295,25 @@ pub struct VestingResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct VestingAllowListResponse {
     pub allow_list: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct DelegatedResponse {
+    pub delegated: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct StakingAddressResponse {
+    pub address: Option<Addr>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct MaxVestingComplexityResponse {
+    pub complexity: u64,
 }

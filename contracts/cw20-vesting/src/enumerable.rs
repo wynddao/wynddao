@@ -75,6 +75,7 @@ mod tests {
             mint: None,
             marketing: None,
             allowed_vesters: None,
+            max_curve_complexity: 10,
         };
         let info = mock_info("creator", &[]);
         let env = mock_env();

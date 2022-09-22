@@ -10,9 +10,12 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
+      - name: Get ssh key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.COSMORAMA_CI_SSH_PRIV_KEY }}
       - name: Checkout sources
         uses: actions/checkout@v2
-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -39,6 +42,11 @@ jobs:
     name: Lints
     runs-on: ubuntu-latest
     steps:
+      - name: Get ssh key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.COSMORAMA_CI_SSH_PRIV_KEY }}
+
       - name: Checkout sources
         uses: actions/checkout@v2
 
@@ -55,9 +63,3 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings

@@ -55,11 +55,11 @@ pub enum ContractError {
     #[error("The transfer tries to vest more tokens than it sends")]
     VestsMoreThanSent,
 
-    #[error("The given account already has a vesting schedule associated with it")]
-    AlreadyVesting,
-
     #[error("The transfer would have moved tokens still locked by a vesting schedule")]
     CantMoveVestingTokens,
+
+    #[error("Can't delegate tokens - sum of balance plus vested is too low")]
+    NotEnoughToDelegate,
 
     #[error("Address Not Found")]
     AddressNotFound {},
@@ -69,6 +69,24 @@ pub enum ContractError {
 
     #[error("At least one Address must be on the Allow List")]
     AtLeastOneAddressMustExist {},
+
+    #[error("Staking token address not set")]
+    StakingAddressNotSet {},
+
+    #[error("Staking token address was already updated once")]
+    StakingAddressAlreadyUpdated {},
+
+    #[error("Minter address not set")]
+    MinterAddressNotSet {},
+
+    #[error("Unauthorized - only minter is allowed to modify staking address")]
+    UnauthorizedUpdateStakingAddress {},
+
+    #[error("Only staking contract is allowed to undelegate tokens")]
+    UnauthorizedUndelegate {},
+
+    #[error("No tokens delegated")]
+    NoTokensDelegated {},
 }
 
 impl From<OverflowError> for ContractError {

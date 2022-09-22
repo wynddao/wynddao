@@ -1,0 +1,1 @@
+RUSTDOCFLAGS="--html-in-header docs-header.html" cargo doc --target-dir docs --color never --no-deps --open --workspace --release

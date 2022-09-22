@@ -1,6 +1,25 @@
-pub mod contract;
-mod error;
-pub mod msg;
-pub mod state;
+#![warn(missing_docs)]
+#![doc(html_logo_url = "../../../uml/logo.png")]
+//! # WYND Governance Decisions Record
+//!
+//! ## Description
+//!
+//! We need a project that record the governance decisions to provide transparency.
+//!
+//! ## Objectives
+//!
+//! The main goal of the **WYND decisions** is to:
+//!   - Define a way to record the decisions data.
+//!
 
-pub use crate::error::ContractError;
+/// Main Decisions Module
+pub mod contract;
+
+/// custom error handler
+pub mod error;
+
+/// custom input output messages
+pub mod msg;
+
+/// state on the blockchain
+pub mod state;

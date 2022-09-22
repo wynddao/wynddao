@@ -1,0 +1,10 @@
+[all]
+exclude-files=[
+    "bench/*",
+    "src/lib.rs",
+    "test/**/*",
+    "mod.rs"
+]
+fail-under=93
+no-fail-fast=true
+skip-clean=false

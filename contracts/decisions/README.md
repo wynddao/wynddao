@@ -1,6 +1,6 @@
 # Decisions
 
-This is an immutible log of decisions made.
+This is an immutable log of decisions made.
 
 ## Instantiate
 
@@ -13,4 +13,4 @@ Each decision is auto-assigned a unique, incrementing id.
 
 ## Query
 
-You can list all decisions or query by id.
+You can list all decisions or queries by id.

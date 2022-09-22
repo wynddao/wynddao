@@ -11,6 +11,7 @@ use cw20::{
     MarketingInfoResponse, TokenInfoResponse,
 };
 
+use cw_utils::ensure_from_older_version;
 use wynd_utils::Curve;
 
 use crate::allowances::{
@@ -20,12 +21,14 @@ use crate::allowances::{
 use crate::enumerable::{query_all_accounts, query_all_allowances};
 use crate::error::ContractError;
 use crate::msg::{
-    assert_schedule_vests_amount, fully_vested, ExecuteMsg, InitBalance, InstantiateMsg,
-    MinterResponse, QueryMsg, VestingAllowListResponse, VestingResponse,
+    assert_schedule_vests_amount, fully_vested, DelegatedResponse, ExecuteMsg, InitBalance,
+    InstantiateMsg, MaxVestingComplexityResponse, MigrateMsg, MinterResponse, QueryMsg,
+    StakingAddressResponse, VestingAllowListResponse, VestingResponse,
 };
+use crate::receive_delegate::Cw20ReceiveDelegationMsg;
 use crate::state::{
-    deduct_coins, MinterData, TokenInfo, ALLOWLIST, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO,
-    VESTING,
+    deduct_coins, MinterData, TokenInfo, ALLOWLIST, BALANCES, DELEGATED, LOGO, MARKETING_INFO,
+    MAX_VESTING_COMPLEXITY, STAKING, TOKEN_INFO, VESTING,
 };
 
 // version info for migration info
@@ -106,6 +109,9 @@ pub fn instantiate(
     // check valid token info
     msg.validate()?;
     let cap = msg.get_cap(&env.block);
+
+    // set maximum vesting complexity
+    MAX_VESTING_COMPLEXITY.save(deps.storage, &msg.max_curve_complexity)?;
 
     // create initial accounts
     let total_supply = create_accounts(&mut deps, &env, msg.initial_balances)?;
@@ -196,6 +202,8 @@ pub fn create_accounts(
 
         let address = deps.api.addr_validate(&row.address)?;
         if let Some(vest) = vesting {
+            let max_complexity = MAX_VESTING_COMPLEXITY.load(deps.storage)?;
+            vest.validate_complexity(max_complexity as usize)?;
             VESTING.save(deps.storage, &address, vest)?;
         }
         BALANCES.save(deps.storage, &address, &row.amount)?;
@@ -271,6 +279,13 @@ pub fn execute(
         ExecuteMsg::UploadLogo(logo) => execute_upload_logo(deps, env, info, logo),
         ExecuteMsg::AllowVester { address } => execute_add_address(deps, info, address),
         ExecuteMsg::DenyVester { address } => execute_remove_address(deps, info, address),
+        ExecuteMsg::UpdateStakingAddress { address } => {
+            execute_update_staking_address(deps, info, address)
+        }
+        ExecuteMsg::Delegate { amount, msg } => execute_delegate(deps, info, amount, msg),
+        ExecuteMsg::Undelegate { recipient, amount } => {
+            execute_undelegate(deps, env, info, recipient, amount)
+        }
     }
 }
 
@@ -329,10 +344,17 @@ pub fn execute_transfer_vesting(
 
     // if it is not already fully vested, we store this
     if !fully_vested(&schedule, &env.block) {
-        VESTING.update(deps.storage, &rcpt_addr, |old| match old {
-            Some(_) => Err(ContractError::AlreadyVesting),
-            None => Ok(schedule),
-        })?;
+        let max_complexity = MAX_VESTING_COMPLEXITY.load(deps.storage)?;
+        VESTING.update(
+            deps.storage,
+            &rcpt_addr,
+            |old| -> Result<_, ContractError> {
+                let schedule = old.map(|old| old.combine(&schedule)).unwrap_or(schedule);
+                // make sure the vesting curve does not get too complex, rendering the account useless
+                schedule.validate_complexity(max_complexity as usize)?;
+                Ok(schedule)
+            },
+        )?;
     }
 
     // this will handle vesting checks as well
@@ -631,13 +653,137 @@ pub fn execute_remove_address(
     Ok(res)
 }
 
+pub fn execute_update_staking_address(
+    deps: DepsMut,
+    info: MessageInfo,
+    staking: String,
+) -> Result<Response, ContractError> {
+    // Staking address can be updated only once
+    // If load is failing, it means it wasn't set before
+    match STAKING.load(deps.storage) {
+        Ok(_) => Err(ContractError::StakingAddressAlreadyUpdated {}),
+        Err(_) => {
+            if let Some(mint) = TOKEN_INFO.load(deps.storage)?.mint {
+                if info.sender == mint.minter {
+                    let staking_address = deps.api.addr_validate(&staking)?;
+                    STAKING.save(deps.storage, &staking_address)?;
+                    Ok(Response::new().add_attribute("update staking address", staking))
+                } else {
+                    Err(ContractError::UnauthorizedUpdateStakingAddress {})
+                }
+            } else {
+                Err(ContractError::MinterAddressNotSet {})
+            }
+        }
+    }
+}
+
+pub fn execute_delegate(
+    deps: DepsMut,
+    info: MessageInfo,
+    amount: Uint128,
+    msg: Binary,
+) -> Result<Response, ContractError> {
+    if amount == Uint128::zero() {
+        return Err(ContractError::InvalidZeroAmount {});
+    }
+
+    let token_address = match STAKING.load(deps.storage) {
+        Ok(address) => address,
+        Err(_) => return Err(ContractError::StakingAddressNotSet {}),
+    };
+
+    // this allows to delegate also vested tokens, because vested is included in balance anyway
+    BALANCES.update(deps.storage, &info.sender, |balance| {
+        let balance = balance.unwrap_or_default();
+        balance
+            .checked_sub(amount)
+            .map_err(|_| ContractError::NotEnoughToDelegate)
+    })?;
+    // make sure we add it to the other side
+    BALANCES.update(deps.storage, &token_address, |balance| -> StdResult<_> {
+        let balance = balance.unwrap_or_default() + amount;
+        Ok(balance)
+    })?;
+
+    DELEGATED.update(
+        deps.storage,
+        &info.sender,
+        |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
+    )?;
+
+    let res = Response::new()
+        .add_attribute("action", "delegate")
+        .add_attribute("from", &info.sender)
+        .add_attribute("to", &token_address)
+        .add_attribute("amount", amount)
+        .add_message(
+            Cw20ReceiveDelegationMsg {
+                sender: info.sender.into(),
+                amount,
+                msg,
+            }
+            .into_cosmos_msg(token_address)?,
+        );
+    Ok(res)
+}
+
+pub fn execute_undelegate(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    recipient: String,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    if amount == Uint128::zero() {
+        return Err(ContractError::InvalidZeroAmount {});
+    }
+
+    match STAKING.load(deps.storage) {
+        Ok(staking) => {
+            if staking != info.sender {
+                return Err(ContractError::UnauthorizedUndelegate {});
+            }
+        }
+        Err(_) => return Err(ContractError::StakingAddressNotSet {}),
+    };
+
+    let recipient_address = deps.api.addr_validate(&recipient)?;
+
+    if !DELEGATED.has(deps.storage, &recipient_address) {
+        return Err(ContractError::NoTokensDelegated {});
+    }
+    DELEGATED.update(
+        deps.storage,
+        &recipient_address,
+        |balance: Option<Uint128>| -> StdResult<_> {
+            Ok(balance.unwrap_or_default().checked_sub(amount)?)
+        },
+    )?;
+    deduct_coins(deps.storage, &env, &info.sender, amount)?;
+    BALANCES.update(
+        deps.storage,
+        &recipient_address,
+        |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
+    )?;
+
+    let res = Response::new()
+        .add_attribute("action", "undelegate")
+        .add_attribute("from", &info.sender)
+        .add_attribute("to", &recipient_address)
+        .add_attribute("amount", amount);
+    Ok(res)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::Vesting { address } => to_binary(&query_vesting(deps, env, address)?),
+        QueryMsg::Delegated { address } => to_binary(&query_delegated(deps, address)?),
         QueryMsg::VestingAllowList {} => to_binary(&query_allow_list(deps)?),
         QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
+        QueryMsg::MaxVestingComplexity {} => to_binary(&query_max_complexity(deps)?),
         QueryMsg::Minter {} => to_binary(&query_minter(deps, env)?),
         QueryMsg::Allowance { owner, spender } => {
             to_binary(&query_allowance(deps, owner, spender)?)
@@ -652,6 +798,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
+        QueryMsg::StakingAddress {} => to_binary(&query_staking_address(deps)?),
     }
 }
 
@@ -671,6 +818,14 @@ pub fn query_vesting(deps: Deps, env: Env, address: String) -> StdResult<Vesting
     Ok(VestingResponse { schedule, locked })
 }
 
+pub fn query_delegated(deps: Deps, address: String) -> StdResult<DelegatedResponse> {
+    let address = deps.api.addr_validate(&address)?;
+    let delegated = DELEGATED
+        .may_load(deps.storage, &address)?
+        .unwrap_or_default();
+    Ok(DelegatedResponse { delegated })
+}
+
 pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
     let info = TOKEN_INFO.load(deps.storage)?;
     let res = TokenInfoResponse {
@@ -680,6 +835,11 @@ pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
         total_supply: info.total_supply,
     };
     Ok(res)
+}
+
+pub fn query_max_complexity(deps: Deps) -> StdResult<MaxVestingComplexityResponse> {
+    let complexity = MAX_VESTING_COMPLEXITY.load(deps.storage)?;
+    Ok(MaxVestingComplexityResponse { complexity })
 }
 
 pub fn query_minter(deps: Deps, env: Env) -> StdResult<Option<MinterResponse>> {
@@ -726,13 +886,30 @@ pub fn query_download_logo(deps: Deps) -> StdResult<DownloadLogoResponse> {
     }
 }
 
+pub fn query_staking_address(deps: Deps) -> StdResult<StakingAddressResponse> {
+    let address = STAKING.may_load(deps.storage)?;
+    Ok(StakingAddressResponse { address })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let stored_version = ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    // migrate MAX_VESTING_COMPLEXITY
+    if stored_version <= "0.5.0-alpha".parse().unwrap() {
+        MAX_VESTING_COMPLEXITY.save(deps.storage, &msg.max_curve_complexity)?;
+    }
+
+    Ok(Response::new())
+}
+
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{
         mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
     };
     use cosmwasm_std::{attr, coins, from_binary, Addr, CosmosMsg, StdError, SubMsg, WasmMsg};
-    use wynd_utils::{Curve, CurveError};
+    use wynd_utils::{Curve, CurveError, PiecewiseLinear};
 
     use super::*;
     use crate::msg::{InstantiateMarketingInfo, MinterInfo};
@@ -790,6 +967,7 @@ mod tests {
             mint: mint.clone(),
             marketing: None,
             allowed_vesters: None,
+            max_curve_complexity: 10,
         };
         let creator_info = match info {
             Some(info) => info,
@@ -845,6 +1023,7 @@ mod tests {
                 mint: None,
                 marketing: None,
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
             let info = mock_info("creator", &[]);
             let env = mock_env();
@@ -888,6 +1067,7 @@ mod tests {
                 }),
                 marketing: None,
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
             let info = mock_info("creator", &[]);
             let env = mock_env();
@@ -939,6 +1119,7 @@ mod tests {
                 }),
                 marketing: None,
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
             let info = mock_info("creator", &[]);
             let env = mock_env();
@@ -979,6 +1160,7 @@ mod tests {
                 mint: None,
                 marketing: None,
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
             let info = mock_info("creator", &[]);
             let env = mock_env();
@@ -1007,6 +1189,86 @@ mod tests {
             assert_eq!(vesting.schedule.unwrap(), schedule);
         }
 
+        #[test]
+        fn init_complex_curve() {
+            let mut deps = mock_dependencies();
+            let addr1 = String::from("addr0001");
+            let addr2 = String::from("addr0002");
+            let amount = Uint128::new(11223344);
+            let amount2 = Uint128::new(12345678);
+            // curve is not fully vested yet and complexity is too high
+            let start = mock_env().block.time.seconds();
+            let complexity = 10_000;
+            let steps: Vec<_> = (0..complexity)
+                .map(|x| (start + x, amount2 - Uint128::from(x)))
+                .chain(std::iter::once((start + complexity, Uint128::new(0)))) // fully vest
+                .collect();
+            let schedule = Curve::PiecewiseLinear(PiecewiseLinear {
+                steps: steps.clone(),
+            });
+
+            let instantiate_msg = InstantiateMsg {
+                name: "Cash Token".to_string(),
+                symbol: "CASH".to_string(),
+                decimals: 9,
+                initial_balances: vec![
+                    InitBalance {
+                        address: addr1,
+                        amount,
+                        vesting: None,
+                    },
+                    InitBalance {
+                        address: addr2.clone(),
+                        amount: amount2,
+                        vesting: Some(schedule),
+                    },
+                ],
+                mint: None,
+                marketing: None,
+                allowed_vesters: None,
+                max_curve_complexity: 10,
+            };
+
+            // should error because curve is too complex
+            let info = mock_info("creator", &[]);
+            let env = mock_env();
+            let error = instantiate(deps.as_mut(), env, info, instantiate_msg).unwrap_err();
+            assert_eq!(ContractError::Curve(CurveError::TooComplex), error);
+
+            // shift curve to the left, so it's fully vested already
+            let steps = steps
+                .into_iter()
+                .map(|(x, y)| (x - complexity, y))
+                .collect();
+            let schedule = Curve::PiecewiseLinear(PiecewiseLinear { steps });
+
+            let instantiate_msg = InstantiateMsg {
+                name: "Cash Token".to_string(),
+                symbol: "CASH".to_string(),
+                decimals: 9,
+                initial_balances: vec![InitBalance {
+                    address: addr2.clone(),
+                    amount: amount2,
+                    vesting: Some(schedule),
+                }],
+                mint: None,
+                marketing: None,
+                allowed_vesters: None,
+                max_curve_complexity: 10,
+            };
+
+            // should *not* error, even though curve is complex, because it's fully vested already
+            let info = mock_info("creator", &[]);
+            let env = mock_env();
+            let res = instantiate(deps.as_mut(), env, info, instantiate_msg).unwrap();
+            assert_eq!(0, res.messages.len());
+
+            // vesting is not set for addr2
+            let vesting = query_vesting(deps.as_ref(), mock_env(), addr2).unwrap();
+            assert_eq!(vesting.locked, Uint128::new(0));
+            assert_eq!(vesting.schedule, None);
+        }
+
         mod marketing {
             use super::*;
 
@@ -1026,6 +1288,7 @@ mod tests {
                         logo: Some(Logo::Url("url".to_owned())),
                     }),
                     allowed_vesters: None,
+                    max_curve_complexity: 10,
                 };
 
                 let info = mock_info("creator", &[]);
@@ -1067,6 +1330,7 @@ mod tests {
                         logo: Some(Logo::Url("url".to_owned())),
                     }),
                     allowed_vesters: None,
+                    max_curve_complexity: 10,
                 };
 
                 let info = mock_info("creator", &[]);
@@ -1285,6 +1549,7 @@ mod tests {
             mint: None,
             marketing: None,
             allowed_vesters: None,
+            max_curve_complexity: 10,
         };
         let err =
             instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg).unwrap_err();
@@ -1310,6 +1575,7 @@ mod tests {
             mint: None,
             marketing: None,
             allowed_vesters: None,
+            max_curve_complexity: 10,
         };
         let res = instantiate(deps.as_mut(), env, info, instantiate_msg).unwrap();
         assert_eq!(0, res.messages.len());
@@ -1455,7 +1721,7 @@ mod tests {
         assert_eq!(vesting.schedule.unwrap(), schedule);
 
         // and not on the original account
-        let non = query_vesting(deps.as_ref(), mock_env(), addr1).unwrap();
+        let non = query_vesting(deps.as_ref(), mock_env(), addr1.clone()).unwrap();
         assert_eq!(non.locked, Uint128::zero());
         assert_eq!(non.schedule, None);
 
@@ -1490,6 +1756,27 @@ mod tests {
         assert_eq!(vesting.locked, Uint128::new(10_000));
         assert_eq!(vesting.schedule.unwrap(), schedule);
 
+        // add more vesting tokens
+        let admin = mock_info(addr1.as_ref(), &coins(amount1.u128(), "AUTO"));
+        let now = env.block.time.seconds();
+        let schedule2 = Curve::saturating_linear((now, 50_000), (now + 1200, 0));
+        let msg = ExecuteMsg::TransferVesting {
+            recipient: addr2.clone(),
+            amount: Uint128::new(50_000), // all remaining funds
+            schedule: schedule2.clone(),
+        };
+        execute(deps.as_mut(), env.clone(), admin, msg).unwrap();
+
+        // ensure the balance
+        assert_eq!(
+            get_balance(deps.as_ref(), addr2.clone()),
+            Uint128::new(60_000)
+        );
+        // and vesting
+        let vesting = query_vesting(deps.as_ref(), env.clone(), addr2.clone()).unwrap();
+        assert_eq!(vesting.locked, Uint128::new(60_000));
+        assert_eq!(vesting.schedule.unwrap(), schedule.combine(&schedule2));
+
         // go past the end of the vesting period
         env.block.time = env.block.time.plus_seconds(1200);
         let msg = ExecuteMsg::Transfer {
@@ -1501,7 +1788,7 @@ mod tests {
         // ensure the balances (2 transfers)
         assert_eq!(
             get_balance(deps.as_ref(), addr2.clone()),
-            Uint128::new(9_000)
+            Uint128::new(59_000)
         );
         assert_eq!(get_balance(deps.as_ref(), addr3), Uint128::new(91_000));
         // and vesting deleted
@@ -1534,10 +1821,6 @@ mod tests {
             schedule,
         };
         execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
-
-        // second transfer vesting to same account fails
-        let err = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap_err();
-        assert_eq!(err, ContractError::AlreadyVesting);
 
         // Unauthorized
         let unauthorized_info = mock_info("addr3", &[]);
@@ -1573,12 +1856,52 @@ mod tests {
 
         // fails with increasing curve
         let increasing = ExecuteMsg::TransferVesting {
-            recipient: addr3,
+            recipient: addr3.clone(),
             amount: Uint128::new(10_000),
             schedule: Curve::saturating_linear((start, 5_000), (end, 6_000)),
         };
-        let err = execute(deps.as_mut(), mock_env(), info, increasing).unwrap_err();
+        let err = execute(deps.as_mut(), mock_env(), info.clone(), increasing).unwrap_err();
         assert_eq!(err, ContractError::Curve(CurveError::MonotonicIncreasing));
+
+        // fails with too complex curve
+        let amount = Uint128::new(10_000);
+        let complex = ExecuteMsg::TransferVesting {
+            recipient: addr3.clone(),
+            amount,
+            schedule: Curve::PiecewiseLinear(PiecewiseLinear {
+                steps: (start..end)
+                    .map(|x| (x, amount))
+                    .chain(std::iter::once((end, Uint128::new(0)))) // fully vest
+                    .collect(),
+            }),
+        };
+        let err = execute(deps.as_mut(), mock_env(), info.clone(), complex).unwrap_err();
+        assert_eq!(err, ContractError::Curve(CurveError::TooComplex));
+
+        // works with almost too complex curve
+        let max_complexity = MAX_VESTING_COMPLEXITY.load(&deps.storage).unwrap();
+        let end = start + max_complexity as u64 - 1;
+        let almost_too_complex = ExecuteMsg::TransferVesting {
+            recipient: addr3.clone(),
+            amount,
+            schedule: Curve::PiecewiseLinear(PiecewiseLinear {
+                steps: (start..end)
+                    .map(|x| (x, amount))
+                    .chain(std::iter::once((end, Uint128::new(0)))) // fully vest
+                    .collect(),
+            }),
+        };
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), almost_too_complex).unwrap();
+        assert_eq!(0, res.messages.len());
+
+        // but fails when adding a simple curve if the combined curve becomes too complex
+        let simple = ExecuteMsg::TransferVesting {
+            recipient: addr3,
+            amount,
+            schedule: Curve::saturating_linear((end, amount.u128()), (end + 1, 0)),
+        };
+        let err = execute(deps.as_mut(), mock_env(), info, simple).unwrap_err();
+        assert_eq!(err, ContractError::Curve(CurveError::TooComplex));
     }
 
     #[test]
@@ -1723,6 +2046,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -1778,6 +2102,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -1832,6 +2157,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -1886,6 +2212,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -1940,6 +2267,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -1994,6 +2322,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2048,6 +2377,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2106,6 +2436,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2160,6 +2491,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2210,6 +2542,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2261,6 +2594,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2313,6 +2647,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2364,6 +2699,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2422,6 +2758,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2473,6 +2810,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2527,6 +2865,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2566,6 +2905,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2633,6 +2973,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: Some(vec!["airdrop".to_string(), "creator".to_string()]),
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);
@@ -2672,6 +3013,7 @@ mod tests {
                     logo: Some(Logo::Url("url".to_owned())),
                 }),
                 allowed_vesters: None,
+                max_curve_complexity: 10,
             };
 
             let info = mock_info("creator", &[]);

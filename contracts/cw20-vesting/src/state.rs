@@ -41,6 +41,12 @@ pub const BALANCES: Map<&Addr, Uint128> = Map::new("balance");
 pub const ALLOWANCES: Map<(&Addr, &Addr), AllowanceResponse> = Map::new("allowance");
 /// existing vesting schedules for each account
 pub const VESTING: Map<&Addr, Curve> = Map::new("vesting");
+/// the maximum complexity an account's vesting curve is allowed to have
+pub const MAX_VESTING_COMPLEXITY: Item<u64> = Item::new("max_vesting_curve_complexity");
+/// Address of staking token
+pub const STAKING: Item<Addr> = Item::new("staking");
+/// Map of how much each address has delegated
+pub const DELEGATED: Map<&Addr, Uint128> = Map::new("delegated");
 
 /// This reduces the account by the given amount, but it also checks the vesting schedule to
 /// ensure there is enough liquidity to do the transfer.
@@ -54,22 +60,26 @@ pub fn deduct_coins(
     // vesting is how much is currently vesting
     let vesting = VESTING
         .may_load(storage, sender)?
-        .map(|v| v.value(env.block.time.seconds()));
+        .map(|v| v.value(env.block.time.seconds()))
+        .unwrap_or_default();
 
     // this occurs when there is a curve defined, but it is now at 0 (eg. fully vested)
     // in this case, we can safely delete it (as it will remain 0 forever)
-    if vesting == Some(Uint128::zero()) {
+    if vesting == Uint128::zero() {
         VESTING.remove(storage, sender);
     }
 
+    let delegated = DELEGATED.may_load(storage, sender)?.unwrap_or_default();
     BALANCES.update(storage, sender, |balance: Option<Uint128>| {
-        let remainder = balance.unwrap_or_default().checked_sub(amount)?;
+        let balance = balance.unwrap_or_default();
+        let remainder = (balance + delegated).checked_sub(amount)?;
+
         // enforce vesting (must have at least this much available)
-        if let Some(vest) = vesting {
-            if vest > remainder {
-                return Err(ContractError::CantMoveVestingTokens);
-            }
+        if vesting > remainder {
+            return Err(ContractError::CantMoveVestingTokens);
         }
-        Ok(remainder)
+        // remainder is only used for comparison with vested amount,
+        // true balance should be updated without delegated
+        Ok(balance.checked_sub(amount)?)
     })
 }

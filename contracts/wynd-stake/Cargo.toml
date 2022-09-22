@@ -1,0 +1,55 @@
+[package]
+name = "wynd-stake"
+version = "0.6.0"
+authors = ["Cosmorama <cosmorama@proton.me>"]
+edition = "2021"
+description = "Multi-timeframe staking contract with rewards to power cw3 voting"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+# wynd packages
+cw20-vesting = { path = "../cw20-vesting", version = "0.6.0", features = [
+    "library",
+] }
+# cw-plus
+cw-utils = "0.15"
+cw2 = "0.15"
+cw4 = "0.15"
+cw20 = "0.15"
+cw-controllers = "0.15"
+cw-storage-plus = "0.15"
+# core cosmwasm
+cosmwasm-std = "1.1"
+# DAO DAO stuff (use 1.0.0 tag until they publish to crates.io)
+cw-core-macros = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+cw-core-interface = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+# standard libs
+schemars = "0.8.1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = "1.0.23"
+
+[dev-dependencies]
+# wynd packages
+wynd-utils = { path = "../../packages/utils", version = "0.6.0" }
+# cw-plus
+cw-multi-test = "0.15"
+cw20 = "0.15"
+# dao dao stuff
+cw-proposal-single = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+cw-core = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+testing = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+voting = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+# core cosmwasm
+cosmwasm-schema = "1.1"
+# standard libs
+anyhow = "1"
+test-case = "2.2.1"

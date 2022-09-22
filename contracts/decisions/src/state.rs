@@ -5,14 +5,20 @@ use crate::msg::DecisionResponse;
 use cosmwasm_std::{Addr, Deps, Order, StdResult};
 use cw_storage_plus::{Item, Map};
 
+/// Configuration Item
 pub const CONFIG: Item<Config> = Item::new("config");
+
+/// Desicion Map <Decision ID, Decision>
 pub const DECISIONS: Map<u64, Decision> = Map::new("decisions");
 
+/// Configuration
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
+    /// contract owner, wynd foundation
     pub owner: Addr,
 }
 
+/// Decision
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Decision {
     /// Creation time as unix time stamp (in seconds)
@@ -29,6 +35,12 @@ pub struct Decision {
 }
 
 impl Decision {
+    /// ## Description
+    /// Return a [`DecisionResponse`] from [`Decision`].
+    ///
+    /// Returns a new object [`DecisionResponse`].
+    /// ## Arguments
+    /// * `id` - unique id that index a Decision.
     pub fn into_response(self, id: u64) -> DecisionResponse {
         DecisionResponse {
             id,

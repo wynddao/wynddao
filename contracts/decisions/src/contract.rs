@@ -7,16 +7,30 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::nonpayable;
 
+use crate::error::ContractError;
 use crate::msg::{
     DecisionResponse, ExecuteMsg, InstantiateMsg, ListDecisionsResponse, QueryMsg, RecordMsg,
 };
 use crate::state::{last_decision, Config, Decision, CONFIG, DECISIONS};
-use crate::ContractError;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:wynd-decisions";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// ## Description
+/// Creates a new contract with the specified parameters in [`InstantiateMsg`].
+/// This will set up the owner of the Decision Recrd contract
+///
+/// Returns a [`Response`] with the specified attributes if the operation was successful,
+/// or a [`ContractError`] if the contract was not created.
+/// ## Arguments
+/// * `deps` - A [`DepsMut`] that contains the dependencies.
+///
+/// * `_env` - The [`Env`] of the blockchain.
+///
+/// * `_info` - The [`MessageInfo`] from the contract instantiator.
+///
+/// * `msg` - A [`InstantiateMsg`] which contains the parameters for creating the contract.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -35,6 +49,19 @@ pub fn instantiate(
         .add_attribute("owner", msg.owner))
 }
 
+/// ## Description
+/// Exposes all the execute functions available in the contract.
+/// ## Arguments
+/// * `deps` - A [`DepsMut`] that contains the dependencies.
+///
+/// * `env` - The [`Env`] of the blockchain.
+///
+/// * `info` - A [`MessageInfo`] that contains the message information.
+///
+/// * `msg` - The [`ExecuteMsg`] to run.
+///
+/// ## Execution Messages
+/// * **ExecuteMsg::Record** Allow to store a decision.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -76,6 +103,7 @@ fn record(
         .add_attribute("title", record.title))
 }
 
+/// Query enumeration used to get an specific or all decisions
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
