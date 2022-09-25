@@ -7,10 +7,10 @@ use cw_core_interface::voting::VotingPowerAtHeightResponse;
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 
 use crate::msg::{
-    AllStakedResponse, DelegatedResponse, DistributedRewardsResponse, ExecuteMsg, InstantiateMsg,
-    QueryMsg, ReceiveDelegationMsg, RewardsResponse, StakeConfig, StakedResponse,
-    TotalRewardsResponse, TotalStakedResponse, UndistributedRewardsResponse,
-    WithdrawableRewardsResponse,
+    AllStakedResponse, BondingInfoResponse, BondingPeriodInfo, DelegatedResponse,
+    DistributedRewardsResponse, ExecuteMsg, InstantiateMsg, QueryMsg, ReceiveDelegationMsg,
+    RewardsResponse, StakeConfig, StakedResponse, TotalRewardsResponse, TotalStakedResponse,
+    UndistributedRewardsResponse, WithdrawableRewardsResponse,
 };
 use cw20_vesting::{
     ExecuteMsg as VestingExecuteMsg, InitBalance, InstantiateMsg as VestingInstantiateMsg,
@@ -423,6 +423,14 @@ impl Suite {
             },
         )?;
         Ok(staked.stake.u128())
+    }
+
+    pub fn query_staked_periods(&self) -> StdResult<Vec<BondingPeriodInfo>> {
+        let info: BondingInfoResponse = self
+            .app
+            .wrap()
+            .query_wasm_smart(self.stake_contract.clone(), &QueryMsg::BondingInfo {})?;
+        Ok(info.bonding)
     }
 
     pub fn query_all_staked(&self, address: &str) -> StdResult<AllStakedResponse> {

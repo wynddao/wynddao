@@ -1,6 +1,6 @@
 [package]
 name = "cw20-vesting"
-version = "0.6.0"
+version = "1.1.0"
 authors = ["Cosmorama <cosmorama@proton.me>"]
 license = "Apache-2.0"
 description = "Extend cw20-base to add vesting times to tokens"
@@ -15,7 +15,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-wynd-utils = { path = "../../packages/utils", version = "0.6.0" }
+wynd-utils = { path = "../../packages/utils", version = "1.1.0" }
 cw-utils = "0.15"
 cw2 = "0.15"
 cw20 = "0.15"

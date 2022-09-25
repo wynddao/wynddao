@@ -83,6 +83,11 @@ fn bond_adds_voting_power() {
     suite.delegate(user3, 4_000u128, unbonding_period).unwrap();
 
     assert_eq!(suite.query_total_staked().unwrap(), 23_500u128);
+    let periods = suite.query_staked_periods().unwrap();
+    assert_eq!(periods.len(), 1);
+    assert_eq!(periods[0].unbonding_period, unbonding_period);
+    assert_eq!(periods[0].voting_multiplier, Decimal::one());
+    assert_eq!(periods[0].total_staked.u128(), 23_500u128);
 
     assert_eq!(
         suite.query_staked(user1, unbonding_period).unwrap(),
@@ -243,6 +248,18 @@ fn one_user_multiple_unbonding_periods() {
             ]
         }
     );
+
+    let periods = suite.query_staked_periods().unwrap();
+    assert_eq!(periods.len(), 3);
+    assert_eq!(periods[0].unbonding_period, unbonding_period1);
+    assert_eq!(periods[0].voting_multiplier, Decimal::percent(25));
+    assert_eq!(periods[0].total_staked.u128(), 25_000);
+    assert_eq!(periods[1].unbonding_period, unbonding_period2);
+    assert_eq!(periods[1].voting_multiplier, Decimal::percent(50));
+    assert_eq!(periods[1].total_staked.u128(), 10_000);
+    assert_eq!(periods[2].unbonding_period, unbonding_period3);
+    assert_eq!(periods[2].voting_multiplier, Decimal::percent(75));
+    assert_eq!(periods[2].total_staked.u128(), 10_000);
 }
 
 #[test]
@@ -532,7 +549,7 @@ fn one_user_multiple_periods_rebond_fail() {
 
     // Fail case, rebonding to a non-existent bucket
     let err = suite
-        .rebond(user, 50_000u128, unbonding_period1, 12000)
+        .rebond(user, 10_000u128, unbonding_period1, 12000)
         .unwrap_err();
     assert_eq!(
         ContractError::NoUnbondingPeriodFound(12000),
@@ -710,6 +727,15 @@ fn one_user_rebond_decrease() {
     suite
         .rebond(user, 5_000u128, unbonding_period1, unbonding_period3)
         .unwrap();
+
+    let periods = suite.query_staked_periods().unwrap();
+    assert_eq!(periods.len(), 3);
+    assert_eq!(periods[0].unbonding_period, unbonding_period1);
+    assert_eq!(periods[0].total_staked.u128(), 0);
+    assert_eq!(periods[1].unbonding_period, unbonding_period2);
+    assert_eq!(periods[1].total_staked.u128(), 30_000);
+    assert_eq!(periods[2].unbonding_period, unbonding_period3);
+    assert_eq!(periods[2].total_staked.u128(), 5_000);
 }
 
 #[test]

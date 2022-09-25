@@ -193,6 +193,7 @@ pub struct BondingPeriodInfo {
     pub unbonding_period: u64,
     pub voting_multiplier: Decimal,
     pub reward_multiplier: Decimal,
+    pub total_staked: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

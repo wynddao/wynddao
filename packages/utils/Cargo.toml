@@ -1,6 +1,6 @@
 [package]
 name = "wynd-utils"
-version = "0.6.0"
+version = "1.1.0"
 authors = ["Cosmorama <cosmorama@proton.me>"]
 license = "Apache-2.0"
 description = "Utility functions used by multiple Wynd contracts"

@@ -439,7 +439,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-vesting"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -453,12 +453,12 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
- "wynd-utils 0.6.0",
+ "wynd-utils 1.1.0",
 ]
 
 [[package]]
 name = "cw20-vesting-airdrop"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -466,14 +466,14 @@ dependencies = [
  "cw-utils 0.15.0",
  "cw2 0.15.0",
  "cw20 0.15.0",
- "cw20-vesting 0.6.0",
+ "cw20-vesting 1.1.0",
  "hex",
  "schemars",
  "serde",
  "serde_json",
  "sha2 0.9.9",
  "thiserror",
- "wynd-utils 0.6.0",
+ "wynd-utils 1.1.0",
 ]
 
 [[package]]
@@ -1169,7 +1169,7 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wynd-decisions"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1185,7 +1185,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-distribution"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1203,7 +1203,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-stake"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1218,7 +1218,7 @@ dependencies = [
  "cw-utils 0.15.0",
  "cw2 0.15.0",
  "cw20 0.15.0",
- "cw20-vesting 0.6.0",
+ "cw20-vesting 1.1.0",
  "cw4",
  "schemars",
  "serde",
@@ -1226,7 +1226,7 @@ dependencies = [
  "testing",
  "thiserror",
  "voting",
- "wynd-utils 0.6.0",
+ "wynd-utils 1.1.0",
 ]
 
 [[package]]
@@ -1243,7 +1243,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-utils"
-version = "0.6.0"
+version = "1.1.0"
 dependencies = [
  "cosmwasm-std",
  "cw-multi-test",

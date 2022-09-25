@@ -138,13 +138,22 @@ pub fn execute_rebond(
 
     // Validate both bond_from and bond_to are valid and get their relevant voting multiplier
     // Validate bond_from is a valid time period
-    let bond_from_staking_multipliers = STAKE_CONFIG
-        .load(deps.storage, bond_from)
-        .map_err(|_| ContractError::NoUnbondingPeriodFound(bond_from))?;
+    let bond_from_staking_multipliers =
+        STAKE_CONFIG.update::<_, ContractError>(deps.storage, bond_from, |multipliers| {
+            let mut multipliers =
+                multipliers.ok_or(ContractError::NoUnbondingPeriodFound(bond_from))?;
+            multipliers.staked = multipliers.staked.checked_sub(amount)?;
+            Ok(multipliers)
+        })?;
+
     // Validate bond_to is a valid time period for Unbonding
-    let bond_to_staking_multipliers = STAKE_CONFIG
-        .load(deps.storage, bond_to)
-        .map_err(|_| ContractError::NoUnbondingPeriodFound(bond_to))?;
+    let bond_to_staking_multipliers =
+        STAKE_CONFIG.update::<_, ContractError>(deps.storage, bond_to, |multipliers| {
+            let mut multipliers =
+                multipliers.ok_or(ContractError::NoUnbondingPeriodFound(bond_to))?;
+            multipliers.staked += amount;
+            Ok(multipliers)
+        })?;
 
     // update the sender's stake
     let mut old_votes_from = Uint128::zero();
@@ -237,9 +246,13 @@ pub fn execute_bond(
     }
 
     // load staking_multipliers to calculate votes and rewards
-    let staking_multipliers = STAKE_CONFIG
-        .load(deps.storage, unbonding_period)
-        .map_err(|_| ContractError::NoUnbondingPeriodFound(unbonding_period))?;
+    let staking_multipliers =
+        STAKE_CONFIG.update::<_, ContractError>(deps.storage, unbonding_period, |multipliers| {
+            let mut multipliers =
+                multipliers.ok_or(ContractError::NoUnbondingPeriodFound(unbonding_period))?;
+            multipliers.staked += amount;
+            Ok(multipliers)
+        })?;
 
     // update the sender's stake
     let mut old_votes = Uint128::zero();
@@ -325,9 +338,15 @@ pub fn execute_unbond(
     let cfg = CONFIG.load(deps.storage)?;
 
     // load voting and reward multiplier to calculate votes and rewards
-    let staking_multipliers = STAKE_CONFIG
-        .load(deps.storage, unbonding_period)
-        .map_err(|_| ContractError::NoUnbondingPeriodFound(unbonding_period))?;
+    // also update the amount staked here
+    let staking_multipliers =
+        STAKE_CONFIG.update::<_, ContractError>(deps.storage, unbonding_period, |multipliers| {
+            let mut multipliers =
+                multipliers.ok_or(ContractError::NoUnbondingPeriodFound(unbonding_period))?;
+            multipliers.staked = multipliers.staked.checked_sub(amount)?;
+            Ok(multipliers)
+        })?;
+
     // reduce the sender's stake - aborting if insufficient
     let mut old_votes = Uint128::zero();
     let mut old_rewards = Uint128::zero();
@@ -608,6 +627,7 @@ fn query_bonding_info(deps: Deps) -> StdResult<BondingInfoResponse> {
                 voting_multiplier: multipliers.voting,
                 reward_multiplier: multipliers.reward,
                 unbonding_period: up,
+                total_staked: multipliers.staked,
             })),
             Ok(None) => None,
             Err(e) => Some(Err(e)),
@@ -1641,6 +1661,7 @@ mod tests {
                     unbonding_period: 20,
                     voting_multiplier: Decimal::one(),
                     reward_multiplier: Decimal::one(),
+                    total_staked: Uint128::zero(),
                 })
             }
         );

@@ -159,6 +159,8 @@ pub struct StakeMultipliers {
     pub voting: Decimal,
     /// Reward multiplier - stake * reward_multiplier = reward_power
     pub reward: Decimal,
+    /// Total staked - not a multiplier, but a total amount of tokens staked to this UnbondingPeriod
+    pub staked: Uint128,
 }
 
 impl From<StakeConfig> for StakeMultipliers {
@@ -166,6 +168,7 @@ impl From<StakeConfig> for StakeMultipliers {
         Self {
             voting: sc.voting_multiplier,
             reward: sc.reward_multiplier,
+            staked: Uint128::zero(),
         }
     }
 }
