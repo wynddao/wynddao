@@ -232,16 +232,19 @@ fn one_user_multiple_unbonding_periods() {
             stakes: vec![
                 StakedResponse {
                     stake: Uint128::new(25_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 1000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(10_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 4000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(10_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 8000,
                     cw20_contract: suite.vesting_contract(),
                 },
@@ -326,16 +329,19 @@ fn one_user_multiple_periods_rebond_then_bond() {
             stakes: vec![
                 StakedResponse {
                     stake: Uint128::new(25_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 1000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(50_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 4000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(10_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 8000,
                     cw20_contract: suite.vesting_contract(),
                 },
@@ -489,16 +495,19 @@ fn rebond_then_rebond_again() {
             stakes: vec![
                 StakedResponse {
                     stake: Uint128::new(60_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 1000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(20_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 4000,
                     cw20_contract: suite.vesting_contract(),
                 },
                 StakedResponse {
                     stake: Uint128::new(20_000),
+                    total_locked: Uint128::zero(),
                     unbonding_period: 8000,
                     cw20_contract: suite.vesting_contract(),
                 },
@@ -717,6 +726,34 @@ fn one_user_rebond_decrease() {
         err.downcast().unwrap()
     );
 
+    // Before we advance time, ensure the locked_tokens are accounted as such in the query
+    // Verify the locked and unlocked stakes via the query
+    assert_eq!(
+        suite.query_all_staked(user).unwrap(),
+        AllStakedResponse {
+            stakes: vec![
+                StakedResponse {
+                    stake: Uint128::new(10_000),
+                    total_locked: Uint128::new(10_000),
+                    unbonding_period: 1000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+                StakedResponse {
+                    stake: Uint128::new(30_000),
+                    total_locked: Uint128::zero(),
+                    unbonding_period: 4000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+                StakedResponse {
+                    stake: Uint128::zero(),
+                    total_locked: Uint128::zero(),
+                    unbonding_period: 8000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+            ]
+        }
+    );
+
     // Advance time such that we can use those 10k again
     suite.update_time(unbonding_period3 - unbonding_period1 + 1);
 
@@ -727,6 +764,33 @@ fn one_user_rebond_decrease() {
     suite
         .rebond(user, 5_000u128, unbonding_period1, unbonding_period3)
         .unwrap();
+
+    // Verify again the locked and unlocked stakes via the query
+    assert_eq!(
+        suite.query_all_staked(user).unwrap(),
+        AllStakedResponse {
+            stakes: vec![
+                StakedResponse {
+                    stake: Uint128::zero(),
+                    total_locked: Uint128::zero(),
+                    unbonding_period: 1000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+                StakedResponse {
+                    stake: Uint128::new(30_000),
+                    total_locked: Uint128::zero(),
+                    unbonding_period: 4000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+                StakedResponse {
+                    stake: Uint128::new(5_000),
+                    total_locked: Uint128::zero(),
+                    unbonding_period: 8000,
+                    cw20_contract: suite.vesting_contract(),
+                },
+            ]
+        }
+    );
 
     let periods = suite.query_staked_periods().unwrap();
     assert_eq!(periods.len(), 3);
