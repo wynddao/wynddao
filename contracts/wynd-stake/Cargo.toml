@@ -1,6 +1,6 @@
 [package]
 name = "wynd-stake"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Cosmorama <cosmorama@proton.me>"]
 edition = "2021"
 description = "Multi-timeframe staking contract with rewards to power cw3 voting"
@@ -17,7 +17,7 @@ library = []
 
 [dependencies]
 # wynd packages
-cw20-vesting = { path = "../cw20-vesting", version = "1.1.0", features = [
+cw20-vesting = { path = "../cw20-vesting", version = "1.2.0", features = [
     "library",
 ] }
 # cw-plus
@@ -39,7 +39,7 @@ thiserror = "1.0.23"
 
 [dev-dependencies]
 # wynd packages
-wynd-utils = { path = "../../packages/utils", version = "1.1.0" }
+wynd-utils = { path = "../../packages/utils", version = "1.2.0" }
 # cw-plus
 cw-multi-test = "0.15"
 cw20 = "0.15"

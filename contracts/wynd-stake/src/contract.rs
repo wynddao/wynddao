@@ -539,9 +539,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Staked {
             address,
             unbonding_period,
-        } => to_binary(&query_staked(deps, address, unbonding_period)?),
+        } => to_binary(&query_staked(deps, &env, address, unbonding_period)?),
         QueryMsg::BondingInfo {} => to_binary(&query_bonding_info(deps)?),
-        QueryMsg::AllStaked { address } => to_binary(&query_all_staked(deps, address)?),
+        QueryMsg::AllStaked { address } => to_binary(&query_all_staked(deps, env, address)?),
         QueryMsg::TotalStaked {} => to_binary(&query_total_staked(deps)?),
         QueryMsg::TotalUnbonding {} => to_binary(&query_total_unbonding(deps)?),
         QueryMsg::Admin {} => to_binary(&ADMIN.query_admin(deps)?),
@@ -646,7 +646,12 @@ fn query_token_contract(deps: Deps) -> StdResult<Addr> {
     Ok(cfg.cw20_contract)
 }
 
-pub fn query_staked(deps: Deps, addr: String, unbonding_period: u64) -> StdResult<StakedResponse> {
+pub fn query_staked(
+    deps: Deps,
+    env: &Env,
+    addr: String,
+    unbonding_period: u64,
+) -> StdResult<StakedResponse> {
     let addr = deps.api.addr_validate(&addr)?;
     // sanity check if such unbonding period exists
     STAKE_CONFIG
@@ -660,12 +665,13 @@ pub fn query_staked(deps: Deps, addr: String, unbonding_period: u64) -> StdResul
     let cw20_contract = CONFIG.load(deps.storage)?.cw20_contract.to_string();
     Ok(StakedResponse {
         stake: stake.total_stake(),
+        total_locked: stake.total_locked(&env),
         unbonding_period,
         cw20_contract,
     })
 }
 
-pub fn query_all_staked(deps: Deps, addr: String) -> StdResult<AllStakedResponse> {
+pub fn query_all_staked(deps: Deps, env: Env, addr: String) -> StdResult<AllStakedResponse> {
     let addr = deps.api.addr_validate(&addr)?;
     let config = CONFIG.load(deps.storage)?;
     let cw20_contract = config.cw20_contract.to_string();
@@ -676,6 +682,7 @@ pub fn query_all_staked(deps: Deps, addr: String) -> StdResult<AllStakedResponse
         .filter_map(|up| match STAKE.may_load(deps.storage, (&addr, up)) {
             Ok(Some(stake)) => Some(Ok(StakedResponse {
                 stake: stake.total_stake(),
+                total_locked: stake.total_locked(&env),
                 unbonding_period: up,
                 cw20_contract: cw20_contract.clone(),
             })),
@@ -934,25 +941,33 @@ mod tests {
 
     fn assert_stake_in_period(
         deps: Deps,
+        env: &Env,
         user1_stake: u128,
         user2_stake: u128,
         user3_stake: u128,
         unbonding_period: u64,
     ) {
-        let stake1 = query_staked(deps, USER1.into(), unbonding_period).unwrap();
+        let stake1 = query_staked(deps, &env, USER1.into(), unbonding_period).unwrap();
         assert_eq!(stake1.stake.u128(), user1_stake);
 
-        let stake2 = query_staked(deps, USER2.into(), unbonding_period).unwrap();
+        let stake2 = query_staked(deps, &env, USER2.into(), unbonding_period).unwrap();
         assert_eq!(stake2.stake.u128(), user2_stake);
 
-        let stake3 = query_staked(deps, USER3.into(), unbonding_period).unwrap();
+        let stake3 = query_staked(deps, &env, USER3.into(), unbonding_period).unwrap();
         assert_eq!(stake3.stake.u128(), user3_stake);
     }
 
     // this tests the member queries
-    fn assert_stake(deps: Deps, user1_stake: u128, user2_stake: u128, user3_stake: u128) {
+    fn assert_stake(
+        deps: Deps,
+        env: &Env,
+        user1_stake: u128,
+        user2_stake: u128,
+        user3_stake: u128,
+    ) {
         assert_stake_in_period(
             deps,
+            &env,
             user1_stake,
             user2_stake,
             user3_stake,
@@ -1007,7 +1022,7 @@ mod tests {
         bond_cw20(deps.as_mut(), 12_000, 7_500, 4_000, 1);
 
         // Assert updated powers
-        assert_stake(deps.as_ref(), 12_000, 7_500, 4_000);
+        assert_stake(deps.as_ref(), &env, 12_000, 7_500, 4_000);
         assert_users(deps.as_ref(), env.clone(), Some(12), Some(7), None, None);
 
         // assert users at initial height
@@ -1040,7 +1055,7 @@ mod tests {
         unbond(deps.as_mut(), 7_900, 4_600, 0, unbonding_period);
 
         // Assert updated powers
-        assert_stake(deps.as_ref(), 12_100, 8_900, 500);
+        assert_stake(deps.as_ref(), &env, 12_100, 8_900, 500);
         assert_users(deps.as_ref(), env.clone(), Some(12), Some(8), None, None);
 
         // with proper claims
@@ -1273,7 +1288,7 @@ mod tests {
         let env = mock_env();
         cw20_instantiate(
             deps.as_mut(),
-            env,
+            env.clone(),
             TOKENS_PER_POWER,
             Uint128::new(1000),
             vec![
@@ -1350,9 +1365,10 @@ mod tests {
         );
 
         // assert stake
-        assert_stake(deps.as_ref(), 900_000, 0, 0);
+        assert_stake(deps.as_ref(), &env, 900_000, 0, 0);
         assert_stake_in_period(
             deps.as_ref(),
+            &env,
             1_100_000,
             280_000,
             19_000,
@@ -1593,7 +1609,8 @@ mod tests {
         let _ = execute(deps.as_mut(), env.clone(), admin_info, hook_msg).unwrap();
 
         // and a User initial stake state
-        let initial_stake = query_staked(deps.as_ref(), USER1.into(), unbonding_period).unwrap();
+        let initial_stake =
+            query_staked(deps.as_ref(), &env, USER1.into(), unbonding_period).unwrap();
         assert_eq!(initial_stake.stake, Uint128::zero());
 
         let initial_power =
@@ -1624,7 +1641,7 @@ mod tests {
         assert_eq!(res.messages, vec![msg]);
 
         // And staked value should increase
-        let stake1 = query_staked(deps.as_ref(), USER1.into(), unbonding_period).unwrap();
+        let stake1 = query_staked(deps.as_ref(), &env, USER1.into(), unbonding_period).unwrap();
         assert_eq!(stake1.stake, Uint128::new(new_stake));
 
         let power1 = query_voting_power(deps.as_ref(), env, USER1.into(), None).unwrap();

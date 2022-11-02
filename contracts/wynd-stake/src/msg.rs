@@ -156,6 +156,7 @@ pub struct StakeConfig {
 #[serde(rename_all = "snake_case")]
 pub struct StakedResponse {
     pub stake: Uint128,
+    pub total_locked: Uint128,
     pub unbonding_period: u64,
     pub cw20_contract: String,
 }

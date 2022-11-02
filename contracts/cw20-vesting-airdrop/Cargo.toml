@@ -1,6 +1,6 @@
 [package]
 name = "cw20-vesting-airdrop"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Cosmorama <cosmorama@proton.me>", "Orkun Kulce <orkunkl@users.noreply.github.com>", "Terraform Labs, PTE."]
 edition = "2021"
 description = "An Airdrop contract for allowing users to claim rewards with Merkle Tree based proof"
@@ -19,8 +19,8 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cw20-vesting = { version = "1.1.0", path = "../cw20-vesting", features = ["library"] }
-wynd-utils = { version = "1.1.0", path = "../../packages/utils" }
+cw20-vesting = { version = "1.2.0", path = "../cw20-vesting", features = ["library"] }
+wynd-utils = { version = "1.2.0", path = "../../packages/utils" }
 cw-utils = "0.15"
 cw2 = "0.15"
 cw20 = "0.15"
