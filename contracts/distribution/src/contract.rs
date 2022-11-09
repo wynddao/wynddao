@@ -6,9 +6,12 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw20::Cw20ExecuteMsg;
+use cw_utils::ensure_from_older_version;
 
 use crate::error::ContractError;
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, RecipientExecuteMsg};
+use crate::msg::{
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, RecipientExecuteMsg,
+};
 use crate::state::{Config, CONFIG};
 
 const CONTRACT_NAME: &str = "crates.io:wynd-distribution";
@@ -152,6 +155,12 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::new())
+}
+
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
@@ -223,8 +232,8 @@ mod tests {
         // update config as admin should work
         let res = execute(
             deps.as_mut(),
-            env.clone(),
-            admin_info.clone(),
+            env,
+            admin_info,
             ExecuteMsg::UpdateConfig {
                 cw20_contract: None,
                 epoch: Some(2),

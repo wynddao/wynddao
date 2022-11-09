@@ -6,7 +6,7 @@ use cw_storage_plus::{Item, Map};
 use cw_utils::{Expiration, Scheduled};
 use wynd_utils::ScalableCurve;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<Addr>,
@@ -23,7 +23,7 @@ pub struct StageDetails {
     pub vesting: Option<ScalableCurve>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct StageAmounts {
     pub total: Uint128,
     pub claimed: Uint128,

@@ -3,14 +3,14 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Initialization message that only setup an owner
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     /// The address who can add decisions to the log
     pub owner: String,
 }
 
 /// Execute message enumeration
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Store a Decision
@@ -18,7 +18,7 @@ pub enum ExecuteMsg {
 }
 
 /// Represents a Decision track
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct RecordMsg {
     /// Title of the decision
     pub title: String,
@@ -74,7 +74,7 @@ impl RecordMsg {
 }
 
 /// Query input Message enumeration
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Query for an specific Decision represented by an ID
@@ -92,7 +92,7 @@ pub enum QueryMsg {
 }
 
 /// Decision Response that may contain the public IPFS link or private hash for the document
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, JsonSchema, Debug)]
 pub struct DecisionResponse {
     /// Decision UID
     pub id: u64,
@@ -110,8 +110,12 @@ pub struct DecisionResponse {
 }
 
 /// Decision Response list wrapper
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, JsonSchema, Debug)]
 pub struct ListDecisionsResponse {
     /// Decision Response list
     pub decisions: Vec<DecisionResponse>,
 }
+
+/// Message that is passed during migration
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub struct MigrateMsg {}

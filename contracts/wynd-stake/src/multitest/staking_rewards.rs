@@ -203,9 +203,9 @@ fn one_user_multiple_unbonding_periods() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 
@@ -295,9 +295,9 @@ fn one_user_multiple_periods_rebond_then_bond() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 
@@ -375,9 +375,9 @@ fn one_user_multiple_periods_rebond_increase() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 
@@ -537,9 +537,9 @@ fn one_user_multiple_periods_rebond_fail() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 
@@ -611,19 +611,19 @@ fn multiple_users_multiple_unbonding_periods() {
         .build();
 
     suite
-        .delegate(&members[0], bonds[0], unbonding_period1)
+        .delegate(members[0], bonds[0], unbonding_period1)
         .unwrap();
     suite
-        .delegate(&members[1], bonds[1], unbonding_period2)
+        .delegate(members[1], bonds[1], unbonding_period2)
         .unwrap();
     suite
-        .delegate(&members[0], bonds[2], unbonding_period3)
+        .delegate(members[0], bonds[2], unbonding_period3)
         .unwrap();
     suite
-        .delegate(&members[2], bonds[3], unbonding_period2)
+        .delegate(members[2], bonds[3], unbonding_period2)
         .unwrap();
     suite
-        .delegate(&members[2], bonds[4], unbonding_period3)
+        .delegate(members[2], bonds[4], unbonding_period3)
         .unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
@@ -671,9 +671,9 @@ fn one_user_rebond_decrease() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 
@@ -832,9 +832,9 @@ fn one_user_rebond_decrease_then_rebond_again() {
     let bonds = vec![20_000u128, 30_000u128, 10_000u128];
     let delegated: u128 = bonds.iter().sum();
 
-    suite.delegate(&user, bonds[0], unbonding_period1).unwrap();
-    suite.delegate(&user, bonds[1], unbonding_period2).unwrap();
-    suite.delegate(&user, bonds[2], unbonding_period3).unwrap();
+    suite.delegate(user, bonds[0], unbonding_period1).unwrap();
+    suite.delegate(user, bonds[1], unbonding_period2).unwrap();
+    suite.delegate(user, bonds[2], unbonding_period3).unwrap();
 
     assert_eq!(suite.query_balance_staking_contract().unwrap(), delegated);
 

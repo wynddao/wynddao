@@ -15,14 +15,14 @@ use cw20_vesting::{Cw20ReceiveDelegationMsg, ExecuteMsg as VestingExecuteMsg};
 use cw_core_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cw_utils::{maybe_addr, Expiration};
+use cw_utils::{ensure_from_older_version, maybe_addr, Expiration};
 
 use crate::error::ContractError;
 use crate::hook::{MemberChangedHookMsg, MemberDiff};
 use crate::msg::{
     AllStakedResponse, BondingInfoResponse, BondingPeriodInfo, ExecuteMsg, InstantiateMsg,
-    QueryMsg, ReceiveDelegationMsg, RewardsResponse, StakedResponse, TotalRewardsResponse,
-    TotalStakedResponse, TotalUnbondingResponse,
+    MigrateMsg, QueryMsg, ReceiveDelegationMsg, RewardsResponse, StakedResponse,
+    TotalRewardsResponse, TotalStakedResponse, TotalUnbondingResponse,
 };
 use crate::state::{
     Config, Distribution, TokenInfo, ADMIN, CLAIMS, CONFIG, DISTRIBUTION, HOOKS, MEMBERS, REWARDS,
@@ -214,7 +214,7 @@ pub fn execute_rebond(
     )?;
     update_rewards(
         deps.storage,
-        info.sender.clone(),
+        info.sender,
         &[old_rewards_to, old_rewards_from],
         &[bond_to_stake_change.rewards, bond_from_stake_change.rewards],
     )?;
@@ -665,7 +665,7 @@ pub fn query_staked(
     let cw20_contract = CONFIG.load(deps.storage)?.cw20_contract.to_string();
     Ok(StakedResponse {
         stake: stake.total_stake(),
-        total_locked: stake.total_locked(&env),
+        total_locked: stake.total_locked(env),
         unbonding_period,
         cw20_contract,
     })
@@ -707,6 +707,12 @@ pub fn query_total_unbonding(deps: Deps) -> StdResult<TotalUnbondingResponse> {
             .unwrap_or_default()
             .unbonding,
     })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::new())
 }
 
 #[cfg(test)]
@@ -947,13 +953,13 @@ mod tests {
         user3_stake: u128,
         unbonding_period: u64,
     ) {
-        let stake1 = query_staked(deps, &env, USER1.into(), unbonding_period).unwrap();
+        let stake1 = query_staked(deps, env, USER1.into(), unbonding_period).unwrap();
         assert_eq!(stake1.stake.u128(), user1_stake);
 
-        let stake2 = query_staked(deps, &env, USER2.into(), unbonding_period).unwrap();
+        let stake2 = query_staked(deps, env, USER2.into(), unbonding_period).unwrap();
         assert_eq!(stake2.stake.u128(), user2_stake);
 
-        let stake3 = query_staked(deps, &env, USER3.into(), unbonding_period).unwrap();
+        let stake3 = query_staked(deps, env, USER3.into(), unbonding_period).unwrap();
         assert_eq!(stake3.stake.u128(), user3_stake);
     }
 
@@ -967,7 +973,7 @@ mod tests {
     ) {
         assert_stake_in_period(
             deps,
-            &env,
+            env,
             user1_stake,
             user2_stake,
             user3_stake,
@@ -1692,5 +1698,43 @@ mod tests {
         let address = query_token_contract(deps.as_ref()).unwrap();
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(address, config.cw20_contract);
+    }
+
+    #[test]
+    fn migrate_same_version() {
+        let mut deps = mock_dependencies();
+        default_instantiate(deps.as_mut(), mock_env());
+
+        migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    }
+
+    #[test]
+    fn migrate_older_version() {
+        let mut deps = mock_dependencies();
+        default_instantiate(deps.as_mut(), mock_env());
+
+        let new_version = "0.0.1";
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, new_version).unwrap();
+
+        migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    }
+
+    #[test]
+    fn migrate_newer_version() {
+        let mut deps = mock_dependencies();
+        default_instantiate(deps.as_mut(), mock_env());
+
+        let new_version = "10.0.0";
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, new_version).unwrap();
+
+        let err = migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+        assert_eq!(
+            err,
+            StdError::generic_err(format!(
+                "Cannot migrate from newer version ({}) to older ({})",
+                new_version, CONTRACT_VERSION
+            ))
+            .into()
+        );
     }
 }

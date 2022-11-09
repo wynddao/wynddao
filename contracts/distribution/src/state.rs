@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use cw_storage_plus::Item;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Config {
     /// Address of the cw20 token the contract should pay out
     pub cw20_contract: Addr,

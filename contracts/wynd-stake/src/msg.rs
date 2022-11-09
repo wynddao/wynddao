@@ -6,7 +6,7 @@ use cw20_vesting::Cw20ReceiveDelegationMsg;
 pub use cw_controllers::ClaimsResponse;
 use cw_core_macros::{token_query, voting_query};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct InstantiateMsg {
     /// address of cw20 contract token
     pub cw20_contract: String,
@@ -18,7 +18,7 @@ pub struct InstantiateMsg {
     pub admin: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Rebond will update an amount of bonded tokens from one bond period to the other
@@ -78,7 +78,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ReceiveDelegationMsg {
     Delegate {
@@ -89,7 +89,7 @@ pub enum ReceiveDelegationMsg {
 
 #[voting_query]
 #[token_query]
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Claims shows the tokens in process of unbonding for this address
@@ -145,14 +145,17 @@ pub enum QueryMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub struct MigrateMsg {}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct StakeConfig {
     pub unbonding_period: u64,      // seconds
     pub voting_multiplier: Decimal, // stake * voting_ratio = voting_power
     pub reward_multiplier: Decimal, // stake * reward_ratio = reward_power
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StakedResponse {
     pub stake: Uint128,
@@ -161,35 +164,35 @@ pub struct StakedResponse {
     pub cw20_contract: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct AllStakedResponse {
     pub stakes: Vec<StakedResponse>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TotalStakedResponse {
     pub total_staked: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TotalUnbondingResponse {
     pub total_unbonding: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct TotalRewardsResponse {
     pub rewards: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct RewardsResponse {
     pub rewards: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct BondingPeriodInfo {
     pub unbonding_period: u64,
     pub voting_multiplier: Decimal,
@@ -197,28 +200,28 @@ pub struct BondingPeriodInfo {
     pub total_staked: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct BondingInfoResponse {
     pub bonding: Vec<BondingPeriodInfo>,
 }
 
 // just for the proper json outputs
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct TokenContractResponse(Addr);
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct WithdrawableRewardsResponse {
     /// Amount of rewards assigned for withdrawal from the given address.
     pub rewards: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct DelegatedResponse {
     pub delegated: Addr,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct DistributedRewardsResponse {
     /// Total number of tokens sent to the contract over all time.
     pub distributed: Uint128,

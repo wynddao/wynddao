@@ -1,15 +1,10 @@
 [package]
 name = "cw20-vesting-airdrop"
-version = "1.2.0"
+version = { workspace = true }
 authors = ["Cosmorama <cosmorama@proton.me>", "Orkun Kulce <orkunkl@users.noreply.github.com>", "Terraform Labs, PTE."]
-edition = "2021"
+edition = { workspace = true }
 description = "An Airdrop contract for allowing users to claim rewards with Merkle Tree based proof"
-license = "Apache-2.0"
-
-exclude = [
-  "contract.wasm",
-  "hash.txt",
-]
+license = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,19 +14,19 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cw20-vesting = { version = "1.2.0", path = "../cw20-vesting", features = ["library"] }
-wynd-utils = { version = "1.2.0", path = "../../packages/utils" }
-cw-utils = "0.15"
-cw2 = "0.15"
-cw20 = "0.15"
-cosmwasm-std = "1.1"
-cw-storage-plus = "0.15"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0.23"
+cw-storage-plus = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+cw20 = { workspace = true }
+cw20-vesting = { workspace = true }
+cosmwasm-std = { workspace = true }
 hex = "0.4"
+schemars = { workspace = true }
+serde = { workspace = true }
 sha2 = { version = "0.9.5", default-features = false }
+thiserror = { workspace = true }
+wynd-utils = { workspace = true }
 
 [dev-dependencies]
-cosmwasm-schema = "1.1"
-serde_json = "1.0"
+cosmwasm-schema = { workspace = true }
+serde_json = "1"

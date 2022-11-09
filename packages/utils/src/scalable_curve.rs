@@ -6,7 +6,7 @@ use cosmwasm_std::{Decimal, Uint128};
 use crate::{Curve, CurveError, PiecewiseLinear, SaturatingLinear};
 
 /// Scalable Curve types
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ScalableCurve {
     /// constant over time
@@ -59,7 +59,7 @@ impl ScalableCurve {
 /// $$f(x)=\begin{cases}
 /// [y * amount],  & \text{if $x_1$ >= x <= $x_2$ }
 /// \end{cases}$$
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 pub struct ScalableLinear {
     /// start x time
     pub min_x: u64,
@@ -87,7 +87,7 @@ impl ScalableLinear {
 /// $$f(x)=\begin{cases}
 /// \[x_n, (a_n*y_n)\],  & \text{if $x_n$ > $x_{n-1}$}
 /// \end{cases}$$
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 pub struct ScalablePiecewise {
     /// steps where x [`u64`] is time and y [`Decimal`](cosmwasm_std::Decimal)
     pub steps: Vec<(u64, Decimal)>,

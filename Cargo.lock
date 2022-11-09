@@ -439,7 +439,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-vesting"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -453,12 +453,12 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
- "wynd-utils 1.2.0",
+ "wynd-utils 1.2.1",
 ]
 
 [[package]]
 name = "cw20-vesting-airdrop"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -466,14 +466,14 @@ dependencies = [
  "cw-utils 0.15.0",
  "cw2 0.15.0",
  "cw20 0.15.0",
- "cw20-vesting 1.2.0",
+ "cw20-vesting 1.2.1",
  "hex",
  "schemars",
  "serde",
  "serde_json",
  "sha2 0.9.9",
  "thiserror",
- "wynd-utils 1.2.0",
+ "wynd-utils 1.2.1",
 ]
 
 [[package]]
@@ -630,6 +630,22 @@ name = "forward_ref"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8cbd1169bd7b4a0a20d92b9af7a7e0422888bd38a6f5ec29c1fd8c1558a272e"
+
+[[package]]
+name = "gauge-orchestrator"
+version = "1.2.1"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus 0.15.0",
+ "cw2 0.15.0",
+ "schemars",
+ "serde",
+ "thiserror",
+ "wynd-stake",
+]
 
 [[package]]
 name = "generic-array"
@@ -1169,7 +1185,7 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wynd-decisions"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1185,7 +1201,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-distribution"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1193,6 +1209,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus 0.15.0",
+ "cw-utils 0.15.0",
  "cw2 0.15.0",
  "cw20 0.15.0",
  "cw20-base",
@@ -1203,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-stake"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1218,7 +1235,7 @@ dependencies = [
  "cw-utils 0.15.0",
  "cw2 0.15.0",
  "cw20 0.15.0",
- "cw20-vesting 1.2.0",
+ "cw20-vesting 1.2.1",
  "cw4",
  "schemars",
  "serde",
@@ -1226,7 +1243,7 @@ dependencies = [
  "testing",
  "thiserror",
  "voting",
- "wynd-utils 1.2.0",
+ "wynd-utils 1.2.1",
 ]
 
 [[package]]
@@ -1243,7 +1260,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-utils"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "cosmwasm-std",
  "cw-multi-test",

@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.59.0
+          toolchain: 1.65.0
           target: wasm32-unknown-unknown
           override: true
 
@@ -28,24 +28,17 @@ jobs:
         env:
           RUST_BACKTRACE: 1
 
-      - name: Compile WASM contract (Debug mode)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --locked --target wasm32-unknown-unknown
-
   lints:
     name: Lints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v3
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.59.0
+          toolchain: 1.65.0
           override: true
           components: rustfmt, clippy
 
@@ -54,3 +47,17 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets -- -D warnings
+
+      - name: Generate Schema
+        run: |
+          for C in ./contracts/*/
+          do
+            echo "Generating schema for `basename $C`..."
+            (cd $C && cargo schema --locked)
+          done
