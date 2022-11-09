@@ -5,11 +5,12 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
-use cw_utils::nonpayable;
+use cw_utils::{ensure_from_older_version, nonpayable};
 
 use crate::error::ContractError;
 use crate::msg::{
-    DecisionResponse, ExecuteMsg, InstantiateMsg, ListDecisionsResponse, QueryMsg, RecordMsg,
+    DecisionResponse, ExecuteMsg, InstantiateMsg, ListDecisionsResponse, MigrateMsg, QueryMsg,
+    RecordMsg,
 };
 use crate::state::{last_decision, Config, Decision, CONFIG, DECISIONS};
 
@@ -139,6 +140,13 @@ fn list_decisions(
         })
         .collect::<StdResult<Vec<_>>>()?;
     Ok(ListDecisionsResponse { decisions })
+}
+
+/// Entry point for migration
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::new())
 }
 
 #[cfg(test)]

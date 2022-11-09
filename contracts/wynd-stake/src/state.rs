@@ -9,7 +9,7 @@ use crate::msg::StakeConfig;
 
 pub const CLAIMS: Claims = Claims::new("claims");
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     /// address of cw20 contract token to stake
     pub cw20_contract: Addr,
@@ -19,7 +19,7 @@ pub struct Config {
     pub unbonding_periods: Vec<UnbondingPeriod>,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct BondingInfo {
     /// the amount of staked tokens which are not locked
     stake: Uint128,
@@ -153,7 +153,7 @@ pub const STAKE: Map<(&Addr, UnbondingPeriod), BondingInfo> = Map::new("stake");
 
 /// Unbonding period in seconds
 type UnbondingPeriod = u64;
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct StakeMultipliers {
     /// Voting multiplier - stake * voting_multiplier = voting_power
     pub voting: Decimal,
@@ -186,7 +186,7 @@ pub const STAKE_CONFIG: Map<UnbondingPeriod, StakeMultipliers> = Map::new("stake
 /// calculations, but I256 is missing and it is required for this.
 pub const SHARES_SHIFT: u8 = 32;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
 pub struct Distribution {
     /// How many shares is single point worth
     pub shares_per_point: Uint128,
@@ -198,7 +198,7 @@ pub struct Distribution {
     pub withdrawable_total: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct WithdrawAdjustment {
     /// How much points should be added/removed from calculated funds while withdrawal.
     pub shares_correction: i128,
@@ -228,16 +228,10 @@ mod tests {
 
         assert_eq!(info.total_unlocked(&env), Uint128::new(1000u128));
 
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(1000)),
-            Uint128::new(1000u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(1000), Uint128::new(1000u128));
         assert_eq!(
             info.locked_tokens,
-            [(
-                Timestamp::from(env.block.time.plus_seconds(1000)),
-                Uint128::new(1000u128)
-            )]
+            [(env.block.time.plus_seconds(1000), Uint128::new(1000u128))]
         );
         assert_eq!(info.total_locked(&env), Uint128::new(1000u128))
     }
@@ -248,10 +242,7 @@ mod tests {
 
         info.stake = info.add_unlocked_tokens(Uint128::new(1000u128));
 
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(1000)),
-            Uint128::new(1000u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(1000), Uint128::new(1000u128));
         // Trying to release both locked and unlocked tokens fails
         let err = info
             .release_stake(&env, Uint128::new(2000u128))
@@ -274,22 +265,13 @@ mod tests {
         let env = mock_env();
 
         info.stake = info.add_unlocked_tokens(Uint128::new(1000u128));
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(10)),
-            Uint128::new(1000u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(10), Uint128::new(1000u128));
 
         info.stake = info.add_unlocked_tokens(Uint128::new(500u128));
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(20)),
-            Uint128::new(500u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(20), Uint128::new(500u128));
 
         info.stake = info.add_unlocked_tokens(Uint128::new(100u128));
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(30)),
-            Uint128::new(100u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(30), Uint128::new(100u128));
 
         assert_eq!(info.total_locked(&env), Uint128::new(1600u128));
         assert_eq!(info.total_unlocked(&env), Uint128::new(1600u128));
@@ -305,22 +287,13 @@ mod tests {
 
         assert_eq!(info.total_unlocked(&env), Uint128::new(1000u128));
 
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.minus_seconds(1000)),
-            Uint128::new(1000u128),
-        );
+        info.add_locked_tokens(env.block.time.minus_seconds(1000), Uint128::new(1000u128));
         assert_eq!(
             info.locked_tokens,
-            [(
-                Timestamp::from(env.block.time.minus_seconds(1000)),
-                Uint128::new(1000u128)
-            )]
+            [(env.block.time.minus_seconds(1000), Uint128::new(1000u128))]
         );
 
-        info.add_locked_tokens(
-            Timestamp::from(env.block.time.plus_seconds(1000)),
-            Uint128::new(1000u128),
-        );
+        info.add_locked_tokens(env.block.time.plus_seconds(1000), Uint128::new(1000u128));
 
         assert_eq!(info.total_unlocked(&env), Uint128::new(2000u128));
         assert_eq!(

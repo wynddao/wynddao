@@ -1,32 +1,30 @@
 [package]
 name = "wynd-decisions"
-version = "1.2.0"
+version = { workspace = true }
 authors = ["Cosmorama <cosmorama@proton.me>"]
-license = "Apache-2.0"
+license = { workspace = true }
 description = "Record decisions taken by a multisig or DAO"
-repository = "https://github.com/cosmorama/wynd-contracts"
+repository = { workspace = true }
 homepage = "https://www.wynddao.com"
-edition = "2021"
+edition = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all instantiate/execute/query exports
 library = []
 
 [dependencies]
-cosmwasm-std = "1.1"
-cosmwasm-storage = "1.1"
-cw-storage-plus = "0.15"
-cw-utils = "0.15"
-cw2 = "0.15"
-schemars = "0.8"
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+schemars = { workspace = true }
 semver = "1"
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-thiserror = "1.0"
+serde = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-cosmwasm-schema = "1.1"
+cosmwasm-schema = { workspace = true }

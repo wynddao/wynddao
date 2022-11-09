@@ -755,3 +755,97 @@ fn querying_unknown_address() {
     let resp = suite.withdrawable_rewards("unknown").unwrap();
     assert_eq!(resp, 0);
 }
+
+#[test]
+fn rebond_works() {
+    let members = vec!["member0".to_owned(), "member1".to_owned()];
+    let executor = "executor";
+
+    let unbonding_period = 1000u64;
+    let unbonding_period2 = 2000u64;
+
+    let mut suite = SuiteBuilder::new()
+        .with_stake_config(vec![
+            // one unbonding_period with rewards power 1.0
+            (unbonding_period, Decimal::one(), Decimal::one()),
+            // later unbonding_period with rewards power 2.0
+            (unbonding_period2, Decimal::one(), Decimal::percent(200)),
+        ])
+        .with_min_bond(1000)
+        .with_initial_balances(vec![
+            (&members[0], 1_000u128, None),
+            (&members[1], 2_000u128, None),
+            (executor, 450 + 300, None),
+        ])
+        .build();
+
+    // delegate
+    suite
+        .delegate(&members[0], 1_000u128, unbonding_period)
+        .unwrap();
+    suite
+        .delegate(&members[1], 2_000u128, unbonding_period)
+        .unwrap();
+
+    // rebond member1 up to unbonding_period2
+    suite
+        .rebond(&members[1], 2_000u128, unbonding_period, unbonding_period2)
+        .unwrap();
+    // rewards power breakdown:
+    // member0: 1000 * 1 / 1000 = 1
+    // member1: 2000 * 2 / 1000 = 4
+    // total: 5
+
+    // distribute
+    suite.distribute_funds(executor, None, 450).unwrap();
+
+    // withdraw
+    suite
+        .withdraw_funds(&members[0], members[0].as_str(), None)
+        .unwrap();
+    suite
+        .withdraw_funds(&members[1], members[1].as_str(), None)
+        .unwrap();
+
+    assert_eq!(
+        suite.query_balance_vesting_contract(&members[0]).unwrap(),
+        90,
+        "member0 should have received 450 * 1 / 5 = 90"
+    );
+    assert_eq!(
+        suite.query_balance_vesting_contract(&members[1]).unwrap(),
+        360,
+        "member1 should have received 450 * 4 / 5 = 360"
+    );
+
+    // rebond member1 down again to unbonding_period
+    suite
+        .rebond(&members[1], 2_000u128, unbonding_period2, unbonding_period)
+        .unwrap();
+    // rewards power breakdown:
+    // member0: 1000 * 1 / 1000 = 1
+    // member1: 2000 * 1 / 1000 = 2
+    // total: 3
+
+    // distribute
+    suite.distribute_funds(executor, None, 300).unwrap();
+
+    // withdraw
+    suite
+        .withdraw_funds(&members[0], members[0].as_str(), None)
+        .unwrap();
+    suite
+        .withdraw_funds(&members[1], members[1].as_str(), None)
+        .unwrap();
+
+    assert_eq!(
+        suite.query_balance_vesting_contract(&members[0]).unwrap(),
+        90 + 100,
+        "member0 should have received 300 * 1 / 3 = 100"
+    );
+    assert_eq!(
+        suite.query_balance_vesting_contract(&members[1]).unwrap(),
+        360 + 200,
+        "member1 should have received 300 * 2 / 3 = 200"
+    );
+}

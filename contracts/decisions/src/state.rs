@@ -12,14 +12,14 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub const DECISIONS: Map<u64, Decision> = Map::new("decisions");
 
 /// Configuration
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Config {
     /// contract owner, wynd foundation
     pub owner: Addr,
 }
 
 /// Decision
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Decision {
     /// Creation time as unix time stamp (in seconds)
     pub created: u64,

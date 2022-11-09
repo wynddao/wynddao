@@ -1,10 +1,10 @@
 [package]
 name = "cw20-vesting"
-version = "1.2.0"
+version = { workspace = true }
 authors = ["Cosmorama <cosmorama@proton.me>"]
-license = "Apache-2.0"
+license = { workspace = true }
 description = "Extend cw20-base to add vesting times to tokens"
-edition = "2021"
+edition = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -15,18 +15,18 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-wynd-utils = { path = "../../packages/utils", version = "1.2.0" }
-cw-utils = "0.15"
-cw2 = "0.15"
-cw20 = "0.15"
-cw-storage-plus = "0.15"
-cosmwasm-std = "1.1"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0.23"
+cosmwasm-std = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+cw20 = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+wynd-utils = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1"
-cosmwasm-schema = "1.1"
-cw-multi-test = "0.15"
+anyhow = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-multi-test = { workspace = true }
 cw20-vesting-0_4_1 = { package = "cw20-vesting", version = "0.4.1" }

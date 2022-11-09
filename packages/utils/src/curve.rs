@@ -6,7 +6,7 @@ use thiserror::Error;
 use cosmwasm_std::Uint128;
 
 /// Handle Contract Errors
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum CurveError {
     /// A monotonic function is a function between ordered sets that preserves
     /// or reverses the given order, but never both.
@@ -36,7 +36,7 @@ pub enum CurveError {
 }
 
 /// Curve types
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum Curve {
     /// Constan curve, it will always have the same value
@@ -184,7 +184,7 @@ impl Curve {
 /// \end{cases}$$
 ///
 /// min_y for all x <= min_x, max_y for all x >= max_x, linear in between
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 pub struct SaturatingLinear {
     /// time when curve start
     pub min_x: u64,
@@ -259,7 +259,7 @@ fn interpolate((min_x, min_y): (u64, Uint128), (max_x, max_y): (u64, Uint128), x
 /// Otherwise, it is a linear interpolation between the two closest points.
 /// Vec of length 1 -> [`Constant`](Curve::Constant) .
 /// Vec of length 2 -> [`SaturatingLinear`] .
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Eq, PartialEq)]
 pub struct PiecewiseLinear {
     /// steps
     pub steps: Vec<(u64, Uint128)>,

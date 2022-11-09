@@ -1,19 +1,19 @@
 [package]
 name = "wynd-utils"
-version = "1.2.0"
+version = { workspace = true }
 authors = ["Cosmorama <cosmorama@proton.me>"]
-license = "Apache-2.0"
+license = { workspace = true }
 description = "Utility functions used by multiple Wynd contracts"
-edition = "2021"
+edition = { workspace = true }
 
 [dependencies]
-cosmwasm-std = "1.1"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.21" }
+cosmwasm-std = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-cw-storage-plus = "0.15"
+cw-multi-test = { workspace = true }
+cw-storage-plus = { workspace = true }
 prost = "0.9"
-cw-multi-test = "0.15"
-test-case = "2.1.0"
+test-case = { workspace = true }
