@@ -185,3 +185,6 @@ pub struct SampleGaugeMsgsResponse {
     // NOTE: I think we will never need CustomMsg here, any reason we should include??
     pub execute: Vec<CosmosMsg>,
 }
+
+#[cw_serde]
+pub enum MigrateMsg {}

@@ -17,7 +17,6 @@ library = []
 cw-storage-plus = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
-cw20 = { workspace = true }
 cw20-vesting = { workspace = true }
 cosmwasm-std = { workspace = true }
 hex = "0.4"
