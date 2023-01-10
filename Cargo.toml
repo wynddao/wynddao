@@ -2,37 +2,38 @@
 members = ["packages/*", "contracts/*"]
 
 [workspace.package]
-version    = "1.2.1"
+version    = "1.4.0"
 edition    = "2021"
-repository = "https://github.com/cosmorama/wynd-contracts"
+repository = "https://github.com/cosmorama/wynddao"
 license    = "Apache-2.0"
 
 [workspace.dependencies]
 anyhow                  = "1"
 cosmwasm-schema         = "1.1"
 cosmwasm-std            = "1.1"
-cosmwasm-storage        = "1.1"
-cw2                     = "0.15"
-cw4                     = "0.15"
-cw20                    = "0.15"
-cw20-base               = "0.15"
-cw20-vesting            = { version = "1.2.1", path = "./contracts/cw20-vesting", features = ["library"] }
-cw-controllers          = "0.15"
-cw-core                 = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
-cw-core-macros          = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
-cw-core-interface       = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
-cw-multi-test           = "0.15"
-cw-proposal-single      = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
-cw-storage-plus         = "0.15"
-cw-utils                = "0.15"
+cw2                     = "0.16"
+cw4                     = "0.16"
+cw4-group               = "0.16"
+cw4-voting              = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+cw20                    = "0.16"
+cw20-base               = "0.16"
+cw20-vesting            = { version = "1.4", path = "./contracts/cw20-vesting", features = ["library"] }
+cw-controllers          = "0.16"
+cw-core                 = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+cw-core-macros          = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+cw-core-interface       = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+cw-multi-test           = "0.16"
+cw-proposal-single      = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+cw-storage-plus         = "0.16"
+cw-utils                = "0.16"
 schemars                = "0.8"
 serde                   = { version = "1", default-features = false, features = ["derive"] }
 test-case               = "2"
-testing                 = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
+testing                 = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
 thiserror               = "1"
-voting                  = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.0" }
-wynd-stake              = { version = "1.2.1", path = "./contracts/wynd-stake", features = ["library"] }
-wynd-utils              = { version = "1.2.1", path = "./packages/utils" }
+voting                  = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
+wynd-stake              = { version = "1.4", path = "./contracts/wynd-stake", features = ["library"] }
+wynd-utils              = { version = "1.4", path = "./packages/utils" }
 
 [profile.release.package.cw20-vesting-airdrop]
 codegen-units = 1
