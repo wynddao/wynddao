@@ -308,7 +308,7 @@ impl PiecewiseLinear {
             return Err(CurveError::MissingSteps);
         }
         self.steps.windows(2).try_for_each(|window| {
-            if window[0].0 > window[1].0 {
+            if window[0].0 >= window[1].0 {
                 Err(CurveError::PointsOutOfOrder)
             } else {
                 Ok(())
@@ -540,6 +540,19 @@ mod tests {
 
         // range is min to max
         assert_eq!(curve.range(), (low.1.u128(), high.1.u128()));
+    }
+
+    #[test]
+    fn test_peacewise_duplicate_x_values() {
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear {
+            steps: vec![
+                (0, Uint128::new(1)),
+                (0, Uint128::new(2)),
+                (1, Uint128::new(3)),
+            ],
+        });
+
+        assert_eq!(curve.validate(), Err(CurveError::PointsOutOfOrder))
     }
 
     #[test_case((1700u64,Uint128::new(500)),(2000u64,Uint128::new(200)); "test piecewise two point decreasing, should not fail")]
