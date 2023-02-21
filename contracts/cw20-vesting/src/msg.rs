@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, BlockInfo, Uint128};
+use cosmwasm_std::{Addr, Binary, BlockInfo, Timestamp, Uint128};
 use cw20::Logo;
 use cw_utils::Expiration;
 use schemars::JsonSchema;
@@ -53,8 +53,8 @@ impl InstantiateMsg {
         self.mint.as_ref().and_then(|v| v.cap.as_ref())
     }
 
-    pub fn get_cap(&self, block: &BlockInfo) -> Option<Uint128> {
-        self.get_curve().map(|v| v.value(block.time.seconds()))
+    pub fn get_cap(&self, block_time: &Timestamp) -> Option<Uint128> {
+        self.get_curve().map(|v| v.value(block_time.seconds()))
     }
 
     pub fn validate(&self) -> Result<(), ContractError> {
@@ -267,7 +267,7 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub struct MigrateMsg {
-    pub max_curve_complexity: u64,
+    pub picewise_linear_curve: Curve,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]

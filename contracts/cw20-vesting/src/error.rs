@@ -87,6 +87,9 @@ pub enum ContractError {
 
     #[error("No tokens delegated")]
     NoTokensDelegated {},
+
+    #[error("Migration error - provided curve is not picewise linear!")]
+    MigrationIncorrectCurve {},
 }
 
 impl From<OverflowError> for ContractError {
