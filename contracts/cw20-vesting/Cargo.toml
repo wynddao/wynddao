@@ -29,4 +29,5 @@ wynd-utils = { workspace = true }
 anyhow = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-multi-test = { workspace = true }
-cw20-vesting-0_4_1 = { package = "cw20-vesting", version = "0.4.1" }
+cw20-vesting-1_1_0 = { package = "cw20-vesting", git = "https://github.com/cosmorama/wynddao", version = "1.1.0" }
+wynd_utils-1_1_0 = { package = "wynd-utils", git = "https://github.com/cosmorama/wynddao", version = "1.1.0" }

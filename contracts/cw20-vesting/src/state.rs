@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, BlockInfo, Env, Storage, Uint128};
+use cosmwasm_std::{Addr, Env, Storage, Timestamp, Uint128};
 use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
@@ -26,10 +26,10 @@ pub struct MinterData {
 }
 
 impl TokenInfo {
-    pub fn get_cap(&self, block: &BlockInfo) -> Option<Uint128> {
+    pub fn get_cap(&self, block_time: &Timestamp) -> Option<Uint128> {
         self.mint
             .as_ref()
-            .and_then(|v| v.cap.as_ref().map(|v| v.value(block.time.seconds())))
+            .and_then(|v| v.cap.as_ref().map(|v| v.value(block_time.seconds())))
     }
 }
 

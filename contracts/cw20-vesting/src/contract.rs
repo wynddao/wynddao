@@ -108,7 +108,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // check valid token info
     msg.validate()?;
-    let cap = msg.get_cap(&env.block);
+    let cap = msg.get_cap(&env.block.time);
 
     // set maximum vesting complexity
     MAX_VESTING_COMPLEXITY.save(deps.storage, &msg.max_curve_complexity)?;
@@ -420,7 +420,7 @@ pub fn execute_mint(
 
     // update supply and enforce cap
     config.total_supply += amount;
-    if let Some(limit) = config.get_cap(&env.block) {
+    if let Some(limit) = config.get_cap(&env.block.time) {
         if config.total_supply > limit {
             return Err(ContractError::CannotExceedCap {});
         }
@@ -893,12 +893,21 @@ pub fn query_staking_address(deps: Deps) -> StdResult<StakingAddressResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let stored_version = ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // migrate MAX_VESTING_COMPLEXITY
-    if stored_version <= "0.5.0-alpha".parse().unwrap() {
-        MAX_VESTING_COMPLEXITY.save(deps.storage, &msg.max_curve_complexity)?;
-    }
+    // make sure picewise linear curve is passed in the message
+    match msg.picewise_linear_curve {
+        Curve::PiecewiseLinear(_) => (),
+        _ => {
+            return Err(ContractError::MigrationIncorrectCurve {});
+        }
+    };
+
+    TOKEN_INFO.update(deps.storage, |mut token_info| -> StdResult<_> {
+        // We can unwrap because we know cap is set
+        token_info.mint.as_mut().unwrap().cap = Some(msg.picewise_linear_curve);
+        Ok(token_info)
+    })?;
 
     Ok(Response::new())
 }
