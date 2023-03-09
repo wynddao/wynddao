@@ -403,7 +403,23 @@ dependencies = [
 
 [[package]]
 name = "cw20-vesting"
-version = "1.5.4"
+version = "1.5.3"
+source = "git+https://github.com/cosmorama/wynddao.git?tag=v1.5.3#e6bac7f0920ff737cf890c47db29da5490e9122a"
+dependencies = [
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "schemars",
+ "serde",
+ "thiserror",
+ "wynd-utils 1.5.3",
+]
+
+[[package]]
+name = "cw20-vesting"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -418,26 +434,26 @@ dependencies = [
  "serde",
  "thiserror",
  "wynd-utils 1.4.0",
- "wynd-utils 1.5.4",
+ "wynd-utils 1.6.0",
 ]
 
 [[package]]
 name = "cw20-vesting-airdrop"
-version = "1.5.4"
+version = "1.6.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw-utils",
  "cw2",
- "cw20-vesting 1.5.4",
+ "cw20-vesting 1.6.0",
  "hex",
  "schemars",
  "serde",
  "serde_json",
  "sha2 0.9.9",
  "thiserror",
- "wynd-utils 1.5.4",
+ "wynd-utils 1.6.0",
 ]
 
 [[package]]
@@ -634,7 +650,24 @@ checksum = "c8cbd1169bd7b4a0a20d92b9af7a7e0422888bd38a6f5ec29c1fd8c1558a272e"
 
 [[package]]
 name = "gauge-orchestrator"
-version = "1.5.4"
+version = "1.5.3"
+source = "git+https://github.com/cosmorama/wynddao.git?tag=v1.5.3#e6bac7f0920ff737cf890c47db29da5490e9122a"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-core-interface",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw2",
+ "schemars",
+ "serde",
+ "thiserror",
+ "wynd-stake 1.5.3",
+]
+
+[[package]]
+name = "gauge-orchestrator"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -649,11 +682,13 @@ dependencies = [
  "cw4",
  "cw4-group",
  "cw4-voting",
+ "gauge-orchestrator 1.5.3",
  "schemars",
+ "semver",
  "serde",
  "thiserror",
  "voting",
- "wynd-stake",
+ "wynd-stake 1.6.0",
 ]
 
 [[package]]
@@ -1189,7 +1224,7 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wynd-decisions"
-version = "1.5.4"
+version = "1.6.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1203,7 +1238,7 @@ dependencies = [
 
 [[package]]
 name = "wynd-distribution"
-version = "1.5.4"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1221,7 +1256,27 @@ dependencies = [
 
 [[package]]
 name = "wynd-stake"
-version = "1.5.4"
+version = "1.5.3"
+source = "git+https://github.com/cosmorama/wynddao.git?tag=v1.5.3#e6bac7f0920ff737cf890c47db29da5490e9122a"
+dependencies = [
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-core-interface",
+ "cw-core-macros",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "cw20-vesting 1.5.3",
+ "cw4",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "wynd-stake"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1236,7 +1291,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "cw20",
- "cw20-vesting 1.5.4",
+ "cw20-vesting 1.6.0",
  "cw4",
  "schemars",
  "serde",
@@ -1244,7 +1299,7 @@ dependencies = [
  "testing",
  "thiserror",
  "voting",
- "wynd-utils 1.5.4",
+ "wynd-utils 1.6.0",
 ]
 
 [[package]]
@@ -1260,7 +1315,18 @@ dependencies = [
 
 [[package]]
 name = "wynd-utils"
-version = "1.5.4"
+version = "1.5.3"
+source = "git+https://github.com/cosmorama/wynddao.git?tag=v1.5.3#e6bac7f0920ff737cf890c47db29da5490e9122a"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "wynd-utils"
+version = "1.6.0"
 dependencies = [
  "cosmwasm-std",
  "cw-multi-test",
