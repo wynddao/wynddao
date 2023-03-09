@@ -2,7 +2,7 @@
 members = ["packages/*", "contracts/*"]
 
 [workspace.package]
-version    = "1.5.4"
+version    = "1.5.3"
 edition    = "2021"
 repository = "https://github.com/cosmorama/wynddao"
 license    = "Apache-2.0"

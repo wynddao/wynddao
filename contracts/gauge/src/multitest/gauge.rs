@@ -1,7 +1,7 @@
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use voting::Vote;
 
-use super::suite::{Suite, SuiteBuilder};
+use super::suite::SuiteBuilder;
 
 use crate::error::ContractError;
 use crate::msg::GaugeResponse;
@@ -16,7 +16,29 @@ fn create_gauge() {
         .with_voting_members(&[(voter1, 100), (voter2, 100)])
         .build();
 
-    let gauge_contract = init_gauge(&mut suite, &[voter1, voter2]);
+    suite.next_block();
+    suite
+        .propose_update_proposal_module(voter1.to_string(), None)
+        .unwrap();
+
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite
+        .place_vote_single(voter2, proposal, Vote::Yes)
+        .unwrap();
+
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+
+    // Second proposal module is cw proposal single, first one is newly added gauge
+    assert_eq!(proposal_modules.len(), 2);
+    let gauge_contract = proposal_modules[0].clone();
 
     let gauge_adapter = suite
         .instantiate_adapter_and_create_gauge(
@@ -49,7 +71,24 @@ fn gauge_can_upgrade_from_self() {
         .with_voting_members(&[(voter1, 100)])
         .build();
 
-    let gauge_contract = init_gauge(&mut suite, &[voter1]);
+    suite.next_block();
+    suite
+        .propose_update_proposal_module(voter1.to_string(), None)
+        .unwrap();
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+
+    // Second proposal module is cw proposal single, first one is newly added gauge
+    assert_eq!(proposal_modules.len(), 2);
+    let gauge_contract = proposal_modules[0].clone();
 
     let gauge_adapter = suite
         .instantiate_adapter_and_create_gauge(
@@ -85,7 +124,24 @@ fn gauge_migrate_with_next_epochs() {
         .with_voting_members(&[(voter1, 100)])
         .build();
 
-    let gauge_contract = init_gauge(&mut suite, &[voter1]);
+    suite.next_block();
+    suite
+        .propose_update_proposal_module(voter1.to_string(), None)
+        .unwrap();
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+
+    // Second proposal module is cw proposal single, first one is newly added gauge
+    assert_eq!(proposal_modules.len(), 2);
+    let gauge_contract = proposal_modules[0].clone();
 
     let gauge_adapter = suite
         .instantiate_adapter_and_create_gauge(
@@ -216,128 +272,6 @@ fn execute_gauge() {
     assert_eq!(
         suite.query_balance(voter1, reward_to_distribute.1).unwrap(),
         1000u128
-    );
-}
-
-/// Small helper method to setup the gauge contract.
-/// Make sure that `voter` has voting power.
-fn init_gauge(suite: &mut Suite, voters: &[&str]) -> Addr {
-    suite.next_block();
-    suite
-        .propose_update_proposal_module(voters[0], None)
-        .unwrap();
-    suite.next_block();
-    let proposal = suite.list_proposals().unwrap()[0];
-    for voter in voters {
-        suite
-            .place_vote_single(*voter, proposal, Vote::Yes)
-            .unwrap();
-    }
-    suite.next_block();
-    suite.execute_single_proposal(voters[0], proposal).unwrap();
-    let proposal_modules = suite.query_proposal_modules().unwrap();
-
-    // Second proposal module is cw proposal single, first one is newly added gauge
-    assert_eq!(proposal_modules.len(), 2);
-    proposal_modules[0].clone()
-}
-
-#[test]
-fn query_last_execution() {
-    let voter1 = "voter1";
-    let voter2 = "voter2";
-
-    let reward_to_distribute = (2000, "ujuno");
-
-    let mut suite = SuiteBuilder::new()
-        .with_voting_members(&[(voter1, 100), (voter2, 100)])
-        .with_core_balance(reward_to_distribute)
-        .build();
-
-    let gauge_contract = init_gauge(&mut suite, &[voter1, voter2]);
-
-    suite
-        .instantiate_adapter_and_create_gauge(
-            gauge_contract.clone(),
-            &[voter1, voter2, gauge_contract.as_str()],
-            (1000, "ujuno"),
-        )
-        .unwrap();
-    let gauge_id = 0;
-
-    assert_eq!(
-        suite
-            .query_last_executed_set(&gauge_contract, gauge_id)
-            .unwrap(),
-        None,
-        "not executed yet"
-    );
-
-    // vote
-    suite
-        .place_vote(&gauge_contract, voter1, gauge_id, Some(voter1.to_owned()))
-        .unwrap();
-    suite
-        .place_votes(
-            &gauge_contract,
-            voter2,
-            gauge_id,
-            vec![
-                (gauge_contract.to_string(), Decimal::percent(40)),
-                (voter2.to_owned(), Decimal::percent(60)),
-            ],
-        )
-        .unwrap();
-    // wait until epoch passes
-    suite.advance_time(EPOCH);
-    // execute
-    suite
-        .execute_options(&gauge_contract, voter1, gauge_id)
-        .unwrap();
-
-    // should return the executed set now
-    let expected_votes = Some(vec![
-        (voter1.to_owned(), 100u128.into()),
-        (voter2.to_string(), 60u128.into()),
-        (gauge_contract.to_string(), 40u128.into()),
-    ]);
-    assert_eq!(
-        suite
-            .query_last_executed_set(&gauge_contract, gauge_id)
-            .unwrap(),
-        expected_votes
-    );
-
-    // change votes
-    suite
-        .place_vote(&gauge_contract, voter1, gauge_id, Some(voter2.to_owned()))
-        .unwrap();
-    suite
-        .place_vote(&gauge_contract, voter2, gauge_id, None)
-        .unwrap();
-
-    // wait until epoch passes
-    suite.advance_time(EPOCH);
-
-    // should not change last execution yet
-    assert_eq!(
-        suite
-            .query_last_executed_set(&gauge_contract, gauge_id)
-            .unwrap(),
-        expected_votes
-    );
-
-    // execute
-    suite
-        .execute_options(&gauge_contract, voter1, gauge_id)
-        .unwrap();
-
-    // now it should be changed
-    assert_eq!(
-        suite
-            .query_last_executed_set(&gauge_contract, gauge_id)
-            .unwrap(),
-        Some(vec![(voter2.to_owned(), 100u128.into())])
     );
 }
 
@@ -541,7 +475,29 @@ fn update_gauge() {
         .with_voting_members(&[(voter1, 100), (voter2, 100)])
         .build();
 
-    let gauge_contract = init_gauge(&mut suite, &[voter1, voter2]);
+    suite.next_block();
+    suite
+        .propose_update_proposal_module(voter1.to_string(), None)
+        .unwrap();
+
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite
+        .place_vote_single(voter2, proposal, Vote::Yes)
+        .unwrap();
+
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+
+    // Second proposal module is cw proposal single, first one is newly added gauge
+    assert_eq!(proposal_modules.len(), 2);
+    let gauge_contract = proposal_modules[0].clone();
 
     let gauge_adapter = suite
         .instantiate_adapter_and_create_gauge(

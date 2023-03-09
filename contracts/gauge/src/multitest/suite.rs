@@ -18,9 +18,9 @@ use voting::{PercentageThreshold, Threshold, Vote};
 
 use super::adapter::{contract as adapter_contract, InstantiateMsg as AdapterInstantiateMsg};
 use crate::msg::{
-    ExecuteMsg, GaugeConfig, GaugeResponse, InstantiateMsg, LastExecutedSetResponse,
-    ListGaugesResponse, ListOptionsResponse, ListVotesResponse, MigrateMsg, QueryMsg,
-    SelectedSetResponse, VoteInfo, VoteResponse,
+    ExecuteMsg, GaugeConfig, GaugeResponse, InstantiateMsg, ListGaugesResponse,
+    ListOptionsResponse, ListVotesResponse, MigrateMsg, QueryMsg, SelectedSetResponse, VoteInfo,
+    VoteResponse,
 };
 
 type GaugeId = u64;
@@ -365,18 +365,6 @@ impl Suite {
             .app
             .wrap()
             .query_wasm_smart(gauge_contract, &QueryMsg::SelectedSet { gauge: id })?;
-        Ok(set.votes)
-    }
-
-    pub fn query_last_executed_set(
-        &self,
-        gauge_contract: &Addr,
-        id: u64,
-    ) -> StdResult<Option<Vec<(String, Uint128)>>> {
-        let set: LastExecutedSetResponse = self
-            .app
-            .wrap()
-            .query_wasm_smart(gauge_contract, &QueryMsg::LastExecutedSet { gauge: id })?;
         Ok(set.votes)
     }
 

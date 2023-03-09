@@ -108,8 +108,6 @@ pub enum QueryMsg {
     },
     #[returns(SelectedSetResponse)]
     SelectedSet { gauge: u64 },
-    #[returns(LastExecutedSetResponse)]
-    LastExecutedSet { gauge: u64 },
 }
 
 /// Information about one gauge
@@ -168,13 +166,6 @@ pub struct ListVotesResponse {
 #[cw_serde]
 pub struct ListOptionsResponse {
     pub options: Vec<(String, Uint128)>,
-}
-
-/// List the options that were selected in the last executed set.
-#[cw_serde]
-pub struct LastExecutedSetResponse {
-    /// `None` if no vote has been executed yet
-    pub votes: Option<Vec<(String, Uint128)>>,
 }
 
 /// List the top options by power that would make it into the selected set.

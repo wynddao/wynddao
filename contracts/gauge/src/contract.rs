@@ -195,7 +195,6 @@ mod execute {
             max_options_selected,
             is_stopped: false,
             next_epoch: env.block.time.seconds() + epoch_size,
-            last_executed_set: None,
         };
         let last_id: GaugeId = fetch_last_id(deps.storage)?;
         GAUGES.save(deps.storage, last_id, &gauge)?;
@@ -453,9 +452,6 @@ mod execute {
             .map(|(_, power)| power.u128())
             .sum::<u128>();
 
-        // save the selected options and their powers for the frontend to display
-        gauge.last_executed_set = Some(selected_set_with_powers.clone());
-
         // calculate "local" ratios of voted options per total power of all selected options
         let selected = selected_set_with_powers
             .into_iter()
@@ -515,16 +511,13 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             limit,
         )?)?),
         QueryMsg::SelectedSet { gauge } => Ok(to_binary(&query::selected_set(deps, gauge)?)?),
-        QueryMsg::LastExecutedSet { gauge } => {
-            Ok(to_binary(&query::last_executed_set(deps, gauge)?)?)
-        }
     }
 }
 
 mod query {
     use super::*;
 
-    use crate::msg::{LastExecutedSetResponse, VoteInfo, VoteResponse};
+    use crate::msg::{VoteInfo, VoteResponse};
     use cw_core_interface::voting::InfoResponse;
 
     pub fn info(deps: Deps) -> StdResult<InfoResponse> {
@@ -644,13 +637,6 @@ mod query {
             .collect::<StdResult<Vec<(String, Uint128)>>>()?;
 
         Ok(SelectedSetResponse { votes })
-    }
-
-    pub fn last_executed_set(deps: Deps, gauge_id: u64) -> StdResult<LastExecutedSetResponse> {
-        let gauge = GAUGES.load(deps.storage, gauge_id)?;
-        Ok(LastExecutedSetResponse {
-            votes: gauge.last_executed_set,
-        })
     }
 }
 
