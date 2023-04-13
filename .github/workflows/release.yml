@@ -16,7 +16,7 @@ jobs:
           docker run --rm -v "$(pwd)":/code \
           --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
           --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-          cosmwasm/workspace-optimizer:0.12.11
+          cosmwasm/workspace-optimizer:0.12.13
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -25,6 +25,7 @@ jobs:
             artifacts/cw20_vesting.wasm
             artifacts/cw20_vesting_airdrop.wasm
             artifacts/gauge_orchestrator.wasm
+            artifacts/marketing_gauge_adapter.wasm
             artifacts/wynd_decisions.wasm
             artifacts/wynd_distribution.wasm
             artifacts/wynd_stake.wasm

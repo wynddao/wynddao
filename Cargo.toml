@@ -2,7 +2,7 @@
 members = ["packages/*", "contracts/*"]
 
 [workspace.package]
-version    = "1.6.0"
+version    = "1.7.0"
 edition    = "2021"
 repository = "https://github.com/cosmorama/wynddao"
 license    = "Apache-2.0"
@@ -33,8 +33,8 @@ test-case               = "2"
 testing                 = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
 thiserror               = "1"
 voting                  = { git = "https://github.com/cosmorama/dao-contracts.git", tag = "v1.1.1" }
-wynd-stake              = { version = "1.6", path = "./contracts/wynd-stake", features = ["library"] }
-wynd-utils              = { version = "1.6", path = "./packages/utils" }
+wynd-stake              = { version = "1.7", path = "./contracts/wynd-stake", features = ["library"] }
+wynd-utils              = { version = "1.7", path = "./packages/utils" }
 
 [profile.release.package.cw20-vesting-airdrop]
 codegen-units = 1
