@@ -307,16 +307,13 @@ impl PiecewiseLinear {
         if self.steps.is_empty() {
             return Err(CurveError::MissingSteps);
         }
-        self.steps.iter().fold(Ok(0u64), |acc, (x, _)| {
-            acc.and_then(|last| {
-                if *x > last {
-                    Ok(*x)
-                } else {
-                    Err(CurveError::PointsOutOfOrder)
-                }
-            })
-        })?;
-        Ok(())
+        self.steps.windows(2).try_for_each(|window| {
+            if window[0].0 >= window[1].0 {
+                Err(CurveError::PointsOutOfOrder)
+            } else {
+                Ok(())
+            }
+        })
     }
 
     /// returns an error if there is ever x2 > x1 such that value(x2) < value(x1)
@@ -506,6 +503,7 @@ mod tests {
     }
 
     #[test_case((100u64,Uint128::new(0)),(200u64,Uint128::new(50)); "test piecewise two point increasing, should not fail")]
+    #[test_case((0u64, Uint128::new(10)), (300u64, Uint128::new(20)); "test piecewise two point increasing, x == 0 start value is valid")]
     fn test_piecewise_two_point_increasing(low: (u64, Uint128), high: (u64, Uint128)) {
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
             steps: vec![low, high],
@@ -521,16 +519,40 @@ mod tests {
         // check extremes
         assert_eq!(curve.value(1), low.1);
         assert_eq!(curve.value(1000000), high.1);
-        // check linear portion
-        assert_eq!(curve.value(150).u128(), 25);
+        // check that midpoint of curve has middle value (curve should
+        // be linear between two points).
+        assert_eq!(
+            curve.value(low.0 + (high.0 - low.0) / 2).u128(),
+            low.1.u128() + (high.1.u128() - low.1.u128()) / 2
+        );
+
         // and rounding
-        assert_eq!(curve.value(103).u128(), 1);
+        let range = high.1.u128() - low.1.u128();
+        let steps = (high.0 - low.0) as u128;
+        // divide range by steps rounding up to get the step size
+        // needed to increase the y value by its smallest.
+        let steps_per_point = steps + (range - 1) / range;
+        assert!(curve.value(low.0 + steps_per_point as u64) > curve.value(low.0));
+
         // check both edges
         assert_eq!(curve.value(low.0), low.1);
         assert_eq!(curve.value(high.0), high.1);
 
         // range is min to max
         assert_eq!(curve.range(), (low.1.u128(), high.1.u128()));
+    }
+
+    #[test]
+    fn test_peacewise_duplicate_x_values() {
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear {
+            steps: vec![
+                (0, Uint128::new(1)),
+                (0, Uint128::new(2)),
+                (1, Uint128::new(3)),
+            ],
+        });
+
+        assert_eq!(curve.validate(), Err(CurveError::PointsOutOfOrder))
     }
 
     #[test_case((1700u64,Uint128::new(500)),(2000u64,Uint128::new(200)); "test piecewise two point decreasing, should not fail")]
